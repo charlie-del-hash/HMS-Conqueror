@@ -37,6 +37,6 @@ hand-entered rate assessments. The transmission board and the November window ar
 ### Viewing it
 
 Open `approval-tracker/index.html` directly, or serve the repo root and browse to
-`/approval-tracker/`. With GitHub Pages enabled, it is at
-`https://<owner>.github.io/HMS-Conqueror/approval-tracker/` — note the repo root currently
-redirects to the VLCC dashboard, so the tracker needs that path.
+`/approval-tracker/`. With GitHub Pages enabled (Settings → Pages → deploy from `main`, `/ (root)`),
+the site is at `https://charlie-del-hash.github.io/HMS-Conqueror/`. The root redirects to the
+Approval Tracker and falls back to a menu of both dashboards if the redirect does not fire.
