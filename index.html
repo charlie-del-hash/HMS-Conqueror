@@ -6,63 +6,103 @@
 <meta http-equiv="refresh" content="0; url=approval-tracker/">
 <link rel="canonical" href="approval-tracker/">
 <title>HMS Conqueror — Dashboards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
 <style>
-  :root{
-    color-scheme: light;
-    --paper:#e7ecef; --card:#fbfcfd; --ink:#101a24; --ink-2:#46586a; --ink-3:#74889a;
-    --rule:rgba(16,26,36,0.14); --accent:#c6006f;
+:root{
+  color-scheme: light;
+  --desk-a:#e3eaf2; --desk-b:#dae3ed;
+  --card:#f8fafc; --card-2:#eef2f7; --well:#fcfdfe;
+  --bar-hi:#f2f5f9; --bar-lo:#c9d2dd; --bezel:rgba(24,38,56,0.22);
+  --ink:#16222f; --ink-2:#45596e; --ink-3:#74879b; --rule-soft:rgba(22,34,47,0.08);
+  --aqua:#2c6fd4; --aqua-lt:#a9ccf6; --aqua-dk:#1b4f9e;
+  --tl-r:#ff5f57; --tl-y:#febc2e; --tl-g:#28c840;
+  --win-shadow: 0 1px 1px rgba(16,28,42,0.10), 0 10px 24px -8px rgba(16,28,42,0.28),
+                0 34px 60px -30px rgba(16,28,42,0.42);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --desk-a:#1b2229; --desk-b:#161c23;
+    --card:#252c34; --card-2:#2d353e; --well:#202730;
+    --bar-hi:#444e59; --bar-lo:#2a323b; --bezel:rgba(0,0,0,0.55);
+    --ink:#eaf1f8; --ink-2:#a9bccd; --ink-3:#7d90a3; --rule-soft:rgba(234,241,248,0.07);
+    --aqua:#4f92e8; --aqua-lt:#8fbdf3; --aqua-dk:#21518f;
+    --win-shadow: 0 1px 1px rgba(0,0,0,0.5), 0 12px 28px -10px rgba(0,0,0,0.7),
+                  0 40px 70px -34px rgba(0,0,0,0.85);
   }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      color-scheme: dark;
-      --paper:#0b141d; --card:#131f2a; --ink:#eef4f8; --ink-2:#a8bccc; --ink-3:#7d93a5;
-      --rule:rgba(238,244,248,0.16); --accent:#f062a8;
-    }
-  }
-  *{ box-sizing:border-box; }
-  body{
-    margin:0; min-height:100vh; background:var(--paper); color:var(--ink);
-    font-family:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-    display:grid; place-items:center; padding:32px; line-height:1.6;
-  }
-  main{ max-width:520px; width:100%; }
-  .eyebrow{
-    font-size:11px; letter-spacing:.16em; text-transform:uppercase; font-weight:600;
-    color:var(--ink-3); margin-bottom:22px;
-  }
-  h1{
-    font-family:"Newsreader", Georgia, serif; font-weight:600; font-size:30px;
-    letter-spacing:-0.02em; line-height:1.2; margin:0 0 8px;
-  }
-  p{ color:var(--ink-2); font-size:14.5px; margin:0 0 24px; }
-  ul{ list-style:none; margin:0; padding:0; display:grid; gap:1px; background:var(--rule);
-      border:1px solid var(--rule); }
-  a.card{
-    display:block; background:var(--card); padding:16px 20px; text-decoration:none; color:inherit;
-  }
-  a.card:hover, a.card:focus-visible{ background:var(--paper); outline:none; }
-  a.card:focus-visible{ box-shadow: inset 0 0 0 2px var(--accent); }
-  a.card b{ display:block; font-size:15.5px; font-weight:600; }
-  a.card span{ display:block; font-size:13px; color:var(--ink-3); margin-top:3px; }
-  footer{ font-size:12px; color:var(--ink-3); margin-top:20px; }
+}
+*{ box-sizing:border-box; }
+body{
+  margin:0; min-height:100vh; padding:32px;
+  background: repeating-linear-gradient(180deg, var(--desk-a) 0 2px, var(--desk-b) 2px 4px), var(--desk-a);
+  color:var(--ink); font-family:"Source Sans 3", -apple-system, "Lucida Grande", sans-serif;
+  line-height:1.58; display:grid; place-items:center;
+}
+.win{
+  width:100%; max-width:560px; background:var(--card);
+  border:1px solid var(--bezel); border-radius:11px; box-shadow:var(--win-shadow); overflow:hidden;
+}
+.titlebar{
+  display:grid; grid-template-columns:64px 1fr 64px; align-items:center; height:40px; padding:0 14px;
+  border-bottom:1px solid var(--bezel);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 55%),
+    repeating-linear-gradient(180deg, rgba(0,0,0,0.014) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, var(--bar-hi), var(--bar-lo));
+}
+.lights{ display:flex; gap:8px; }
+.lights i{
+  width:12px; height:12px; border-radius:50%; border:1px solid rgba(0,0,0,0.22);
+  background-image: radial-gradient(circle at 50% 22%, rgba(255,255,255,0.9), rgba(255,255,255,0) 52%);
+}
+.lights i.r{ background-color:var(--tl-r); } .lights i.y{ background-color:var(--tl-y); } .lights i.g{ background-color:var(--tl-g); }
+.wtitle{ text-align:center; font-size:13.5px; font-weight:600; color:var(--ink-2); }
+.wbody{ padding:26px 26px 24px; }
+.eyebrow{ font-size:11px; letter-spacing:.13em; text-transform:uppercase; font-weight:700; color:var(--ink-3); }
+h1{ font-family:"Source Serif 4", Georgia, serif; font-weight:600; font-size:27px;
+    letter-spacing:-0.025em; line-height:1.2; margin:12px 0 6px; }
+p.lede{ color:var(--ink-2); font-size:14px; margin:0 0 22px; }
+ul{ list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+a.row{
+  display:block; padding:15px 18px; border-radius:9px; text-decoration:none; color:inherit;
+  background:var(--well); box-shadow: inset 0 1px 3px var(--bezel), inset 0 0 0 1px var(--rule-soft);
+}
+a.row:hover{ background:var(--card-2); }
+a.row:focus-visible{
+  outline:none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--aqua) 45%, transparent),
+              0 0 7px 2px color-mix(in srgb, var(--aqua) 40%, transparent);
+}
+a.row b{ display:block; font-size:15.5px; font-weight:700; }
+a.row span{ display:block; font-size:13px; color:var(--ink-3); margin-top:2px; }
+footer{ font-size:11.5px; color:var(--ink-3); margin-top:20px; padding-top:14px; border-top:1px solid var(--rule-soft); }
 </style>
 </head>
 <body>
-<main>
-  <div class="eyebrow">HMS Conqueror &middot; Research &amp; Market Intelligence</div>
-  <h1>Taking you to the Approval Tracker&hellip;</h1>
-  <p>If nothing happens, pick a dashboard below.</p>
-  <ul>
-    <li><a class="card" href="approval-tracker/">
-      <b>Freight Desk Approval Tracker</b>
-      <span>US presidential approval as a leading indicator of maritime policy risk</span>
-    </a></li>
-    <li><a class="card" href="Newbuild%20Interactive%20(1)/VLCC%20Dashboard.html">
-      <b>VLCC Newbuilding Analysis</b>
-      <span>Newbuild vs. secondhand economics, sensitivity and breakeven modelling</span>
-    </a></li>
-  </ul>
-  <footer>Internal use only.</footer>
-</main>
+<div class="win">
+  <div class="titlebar">
+    <div class="lights" aria-hidden="true"><i class="r"></i><i class="y"></i><i class="g"></i></div>
+    <div class="wtitle">HMS Conqueror</div>
+    <div></div>
+  </div>
+  <div class="wbody">
+    <div class="eyebrow">Research &amp; Market Intelligence</div>
+    <h1>Taking you to the Approval Tracker&hellip;</h1>
+    <p class="lede">If nothing happens, pick a dashboard below.</p>
+    <ul>
+      <li><a class="row" href="approval-tracker/">
+        <b>Freight Desk Approval Tracker</b>
+        <span>US presidential approval as a leading indicator of maritime policy risk</span>
+      </a></li>
+      <li><a class="row" href="Newbuild%20Interactive%20(1)/VLCC%20Dashboard.html">
+        <b>VLCC Newbuilding Analysis</b>
+        <span>Newbuild vs. secondhand economics, sensitivity and breakeven modelling</span>
+      </a></li>
+    </ul>
+    <footer>Internal use only.</footer>
+  </div>
+</div>
 </body>
 </html>
