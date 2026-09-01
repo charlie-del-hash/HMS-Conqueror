@@ -1,0 +1,884 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Freight Desk Approval Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&display=swap">
+<style>
+/* ------------------------------------------------------------------ *
+ *  HMS Conqueror — Freight Desk Approval Tracker
+ *  Palette: Admiralty chart. Cool paper ground, ink linework,
+ *  chart-blue / rust diverging pair, magenta for cautionary marks.
+ *  Diverging pair validated (all-pairs CVD + contrast, both modes).
+ * ------------------------------------------------------------------ */
+:root{
+  color-scheme: light;
+  --paper:      #e7ecef;   /* page plane — pale chart tint, cool */
+  --card:       #fbfcfd;   /* plate surface */
+  --card-2:     #f2f5f7;   /* recessed surface */
+  --ink:        #101a24;   /* primary ink */
+  --ink-2:      #46586a;   /* secondary ink */
+  --ink-3:      #74889a;   /* muted — axes, captions */
+  --rule:       rgba(16,26,36,0.14);
+  --rule-soft:  rgba(16,26,36,0.07);
+  --approve:    #1f6fc9;   /* series — approve */
+  --disapprove: #d9541f;   /* series — disapprove */
+  --gap-fill:   rgba(217,84,31,0.10);
+  --accent:     #c6006f;   /* admiralty magenta — cautionary marks only */
+  --accent-soft:rgba(198,0,111,0.10);
+  --graphite:   #8c9dab;   /* non-transmitting bars */
+  --shadow:     0 1px 2px rgba(16,26,36,0.05), 0 8px 24px -12px rgba(16,26,36,0.18);
+
+  --f-display: "Newsreader", Georgia, "Times New Roman", serif;
+  --f-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --paper:      #0b141d;
+    --card:       #131f2a;
+    --card-2:     #182734;
+    --ink:        #eef4f8;
+    --ink-2:      #a8bccc;
+    --ink-3:      #7d93a5;
+    --rule:       rgba(238,244,248,0.16);
+    --rule-soft:  rgba(238,244,248,0.08);
+    --approve:    #4a90e2;
+    --disapprove: #e2703a;
+    --gap-fill:   rgba(226,112,58,0.13);
+    --accent:     #f062a8;
+    --accent-soft:rgba(240,98,168,0.14);
+    --graphite:   #6d8394;
+    --shadow:     0 1px 2px rgba(0,0,0,0.4), 0 10px 30px -14px rgba(0,0,0,0.7);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --paper:      #0b141d;
+  --card:       #131f2a;
+  --card-2:     #182734;
+  --ink:        #eef4f8;
+  --ink-2:      #a8bccc;
+  --ink-3:      #7d93a5;
+  --rule:       rgba(238,244,248,0.16);
+  --rule-soft:  rgba(238,244,248,0.08);
+  --approve:    #4a90e2;
+  --disapprove: #e2703a;
+  --gap-fill:   rgba(226,112,58,0.13);
+  --accent:     #f062a8;
+  --accent-soft:rgba(240,98,168,0.14);
+  --graphite:   #6d8394;
+  --shadow:     0 1px 2px rgba(0,0,0,0.4), 0 10px 30px -14px rgba(0,0,0,0.7);
+}
+
+*{ box-sizing: border-box; }
+body{
+  margin:0; background: var(--paper); color: var(--ink);
+  font-family: var(--f-sans); font-size: 15px; line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+:focus-visible{ outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+@media (prefers-reduced-motion: reduce){ *{ animation: none !important; transition: none !important; } }
+
+.wrap{ max-width: 1140px; margin: 0 auto; padding: 0 24px 96px; }
+
+/* ---- masthead ---------------------------------------------------- */
+.masthead{
+  border-bottom: 2px solid var(--ink);
+  padding: 26px 0 14px; margin-bottom: 34px;
+  display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap;
+}
+.brand{ display:flex; align-items:center; gap:12px; }
+.brand .flag{
+  width: 34px; height: 22px; flex:none; border: 1px solid var(--rule);
+  background:
+    linear-gradient(var(--accent),var(--accent)) 0 0 / 100% 34% no-repeat,
+    linear-gradient(var(--approve),var(--approve)) 0 100% / 100% 34% no-repeat,
+    var(--card);
+}
+.brand b{ font-family: var(--f-sans); font-weight:600; letter-spacing:.16em; font-size:12px; text-transform:uppercase; }
+.brand span{ display:block; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color: var(--ink-3); }
+.dateline{ font-family: var(--f-mono); font-size:11.5px; letter-spacing:.06em; color: var(--ink-3); text-align:right; }
+.dateline b{ color: var(--ink-2); font-weight:500; }
+
+/* ---- headline ---------------------------------------------------- */
+h1{
+  font-family: var(--f-display); font-weight: 600; font-size: clamp(38px, 6.4vw, 68px);
+  line-height: 1.03; letter-spacing: -0.022em; margin: 0 0 18px; max-width: 15ch;
+  text-wrap: balance;
+}
+h1 em{ font-style: italic; color: var(--accent); }
+.standfirst{
+  font-family: var(--f-display); font-size: clamp(18px, 2.2vw, 22px); line-height:1.5;
+  color: var(--ink-2); max-width: 62ch; margin: 0 0 8px;
+}
+.byline{
+  font-family: var(--f-mono); font-size: 11.5px; letter-spacing:.05em; color: var(--ink-3);
+  border-top: 1px solid var(--rule-soft); padding-top: 12px; margin-top: 22px;
+}
+
+/* ---- hero readings ----------------------------------------------- */
+.hero{
+  display:grid; grid-template-columns: 1.15fr 1fr 1fr; gap:1px;
+  background: var(--rule); border:1px solid var(--rule);
+  margin: 34px 0 12px; box-shadow: var(--shadow);
+}
+@media (max-width: 760px){ .hero{ grid-template-columns: 1fr; } }
+.tile{ background: var(--card); padding: 20px 22px 18px; min-width: 0; }
+.tile .lab{
+  font-size: 10.5px; letter-spacing:.15em; text-transform:uppercase; font-weight:600;
+  color: var(--ink-3); margin-bottom: 10px;
+}
+.tile .fig{
+  font-family: var(--f-display); font-weight:600; font-size: clamp(44px, 6vw, 64px);
+  line-height:1; letter-spacing:-0.03em; display:flex; align-items:baseline; gap:10px;
+}
+.tile .fig small{ font-family: var(--f-sans); font-size:14px; font-weight:500; letter-spacing:0; color:var(--ink-3); }
+.tile .sub{ font-size:13px; color: var(--ink-2); margin-top: 10px; line-height:1.5; }
+.tile .split{ display:flex; gap:18px; margin-top:14px; }
+.tile .split div{ font-family: var(--f-mono); font-size:12.5px; color: var(--ink-2); }
+.tile .split b{ display:block; font-size:19px; font-weight:600; letter-spacing:-0.01em; }
+.sw{ display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:6px; vertical-align:1px; }
+.fig.neg{ color: var(--disapprove); }
+.fig.count{ color: var(--ink); }
+.countbar{ height:5px; background: var(--card-2); margin-top:14px; position:relative; overflow:hidden; }
+.countbar i{ position:absolute; inset:0 auto 0 0; background: var(--accent); }
+
+/* ---- plates ------------------------------------------------------ */
+.plate{
+  background: var(--card); border:1px solid var(--rule); box-shadow: var(--shadow);
+  margin: 44px 0 0; padding: 0 0 4px;
+}
+.plate > header{
+  display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
+  padding: 16px 24px 14px; border-bottom: 1px solid var(--rule-soft);
+}
+.plate .pn{
+  font-family: var(--f-mono); font-size:11px; font-weight:600; letter-spacing:.1em;
+  color: var(--card); background: var(--ink); padding: 3px 7px; flex:none;
+}
+.plate h2{
+  font-family: var(--f-display); font-weight:600; font-size: 23px; letter-spacing:-0.015em;
+  margin:0; line-height:1.2;
+}
+.plate .kicker{ font-size:13px; color: var(--ink-3); margin-left:auto; }
+.plate .body{ padding: 20px 24px 22px; }
+.plate p{ max-width: 68ch; color: var(--ink-2); margin: 0 0 14px; }
+.plate p:last-child{ margin-bottom:0; }
+.plate p strong{ color: var(--ink); font-weight:600; }
+
+/* ---- charts ------------------------------------------------------ */
+.chartbox{ padding: 8px 12px 0; overflow-x:auto; }
+svg.chart{ display:block; width:100%; height:auto; min-width: 560px; }
+.legend{
+  display:flex; gap:20px; flex-wrap:wrap; align-items:center;
+  padding: 4px 24px 0; font-size:12.5px; color: var(--ink-2);
+}
+.legend span{ display:flex; align-items:center; gap:7px; }
+.legend i{ width:16px; height:3px; border-radius:2px; display:block; }
+.legend i.dot{ width:9px; height:9px; border-radius:50%; }
+.footnote{
+  font-size:12px; color: var(--ink-3); padding: 14px 24px 4px; max-width:78ch; line-height:1.55;
+}
+.footnote a{ color: var(--ink-2); }
+
+/* event key */
+.evkey{
+  display:grid; grid-template-columns: repeat(auto-fill, minmax(232px,1fr)); gap: 4px 22px;
+  padding: 12px 24px 6px; font-size:12.5px; color: var(--ink-2);
+}
+.evkey div{ display:flex; gap:9px; align-items:baseline; }
+.evkey b{
+  font-family: var(--f-mono); font-size:10.5px; font-weight:600; flex:none;
+  width:17px; height:17px; display:grid; place-items:center; border-radius:50%;
+  border:1px solid var(--rule); color: var(--ink-2); background: var(--card-2);
+}
+.evkey div.fwd b{ border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.evkey em{ font-style:normal; color: var(--ink-3); font-family: var(--f-mono); font-size:11px; }
+
+/* tooltip */
+.tip{
+  position:absolute; pointer-events:none; opacity:0; transform: translate(-50%, -100%);
+  background: var(--card); border:1px solid var(--rule); box-shadow: var(--shadow);
+  padding: 9px 12px; font-size:12.5px; min-width: 168px; z-index: 5; transition: opacity .09s;
+}
+.tip .t-d{ font-family: var(--f-mono); font-size:11px; color: var(--ink-3); letter-spacing:.04em; margin-bottom:6px; }
+.tip .t-r{ display:flex; justify-content:space-between; gap:16px; color: var(--ink-2); }
+.tip .t-r b{ font-family: var(--f-mono); font-weight:600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.tip .t-src{ margin-top:7px; padding-top:6px; border-top:1px solid var(--rule-soft); font-size:11px; color: var(--ink-3); }
+.chartwrap{ position:relative; }
+
+/* ---- table view -------------------------------------------------- */
+.tv-btn{
+  font-family: var(--f-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  background: transparent; border:1px solid var(--rule); color: var(--ink-2);
+  padding: 6px 11px; cursor:pointer; margin: 14px 24px 4px;
+}
+.tv-btn:hover{ background: var(--card-2); color: var(--ink); }
+table{ border-collapse: collapse; width:100%; font-size:13px; }
+.tbl-scroll{ overflow-x:auto; padding: 6px 24px 10px; }
+th,td{ text-align:left; padding: 8px 14px 8px 0; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+th{
+  font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color: var(--ink-3);
+  font-weight:600; border-bottom-color: var(--rule); white-space:nowrap;
+}
+td.num{ font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space:nowrap; }
+
+/* ---- transmission board ------------------------------------------ */
+.board td:first-child{ font-weight:600; color: var(--ink); }
+.chip{
+  display:inline-block; font-family: var(--f-mono); font-size:10.5px; letter-spacing:.05em;
+  padding: 2px 7px; border:1px solid var(--rule); color: var(--ink-2);
+  background: var(--card-2); margin: 2px 4px 2px 0; white-space:nowrap;
+}
+.chip.hot{ border-color: var(--disapprove); color: var(--disapprove); background: transparent; }
+.net{ font-family: var(--f-mono); font-weight:600; font-variant-numeric: tabular-nums; color: var(--disapprove); }
+
+/* ---- rate tiles -------------------------------------------------- */
+.rates{ display:grid; grid-template-columns: repeat(auto-fit, minmax(212px,1fr)); gap:1px; background: var(--rule-soft); }
+.rate{ background: var(--card); padding: 18px 20px; }
+.rate .lab{ font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color: var(--ink-3); font-weight:600; }
+.rate .v{
+  font-family: var(--f-display); font-weight:600; font-size: 31px; letter-spacing:-0.02em;
+  margin: 8px 0 2px; line-height:1.05;
+}
+.rate .u{ font-family: var(--f-mono); font-size:11.5px; color: var(--ink-3); }
+.rate .n{ font-size:12.5px; color: var(--ink-2); margin-top:9px; line-height:1.5; }
+.rate .src{ font-family: var(--f-mono); font-size:10.5px; color: var(--ink-3); margin-top:8px; }
+.rate.lead .v{ color: var(--disapprove); }
+
+/* ---- november window --------------------------------------------- */
+.window{ display:grid; grid-template-columns: 1fr 1fr; gap:1px; background: var(--rule-soft); }
+@media (max-width: 700px){ .window{ grid-template-columns:1fr; } }
+.wcol{ background: var(--card); padding: 20px 22px; min-width: 0; }
+.wcol .d{ font-family: var(--f-mono); font-size:12px; letter-spacing:.08em; color: var(--accent); font-weight:600; }
+.wcol h3{ font-family: var(--f-display); font-size:20px; font-weight:600; margin:8px 0 10px; letter-spacing:-0.01em; }
+.wcol p{ font-size:13.5px; }
+.feebox{ margin-top: 16px; display: block; overflow-x: auto; width: 100%; }
+.feebox td.num{ color: var(--ink); }
+
+/* ---- sources ----------------------------------------------------- */
+.sources{ margin-top: 44px; border-top: 2px solid var(--ink); padding-top: 20px; }
+.sources h2{ font-family: var(--f-display); font-size:19px; font-weight:600; margin:0 0 14px; }
+.sources ol{ margin:0; padding-left: 20px; font-size:12.5px; color: var(--ink-2); line-height:1.7; }
+.sources li{ margin-bottom: 5px; }
+.sources a{ color: var(--ink-2); text-underline-offset: 2px; }
+.sources a:hover{ color: var(--accent); }
+.credit{
+  background: var(--card); border:1px solid var(--rule); border-left: 3px solid var(--accent);
+  padding: 16px 20px; margin: 0 0 22px; font-size:13.5px; color: var(--ink-2); max-width: 74ch;
+}
+.credit b{ color: var(--ink); }
+.demo-note{
+  font-size:12.5px; color: var(--ink-2); background: var(--card-2);
+  border:1px dashed var(--rule); padding: 14px 18px; margin-top: 18px; max-width: 78ch;
+}
+.demo-note b{ color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <div class="brand">
+    <div class="flag" aria-hidden="true"></div>
+    <div>
+      <b>HMS Conqueror</b>
+      <span>Research &amp; Market Intelligence</span>
+    </div>
+  </div>
+  <div class="dateline">
+    Internal demo &middot; <b id="today">1 September 2026</b><br>
+    Source series: The Economist &middot; Economist/YouGov
+  </div>
+</header>
+
+<h1>Washington is a <em>freight</em> indicator</h1>
+<p class="standfirst">The Economist tracks the president&rsquo;s approval rating. We track what it does to our book.
+Approval is the cheapest forward read on trade policy a broker can get &mdash; and this year the two dates that
+decide the China&nbsp;tonnage question fall six days apart in November.</p>
+<div class="byline">Prepared for the chartering &amp; S&amp;P desks &middot; Demo build &middot; Not investment advice</div>
+
+<section class="hero" aria-label="Headline readings">
+  <div class="tile">
+    <div class="lab">Net approval &middot; latest reading</div>
+    <div class="fig neg">&minus;29<small>points</small></div>
+    <div class="split">
+      <div><span class="sw" style="background:var(--approve)"></span>Approve<b>33%</b></div>
+      <div><span class="sw" style="background:var(--disapprove)"></span>Disapprove<b>62%</b></div>
+    </div>
+    <div class="sub">Economist/YouGov, 7&ndash;10 August 2026 &mdash; the lowest job approval of either term.</div>
+  </div>
+  <div class="tile">
+    <div class="lab">To the midterms</div>
+    <div class="fig count"><span id="c1">63</span><small>days</small></div>
+    <div class="countbar"><i id="b1"></i></div>
+    <div class="sub">Tuesday 3 November 2026. A result either way resets the administration&rsquo;s appetite for trade escalation.</div>
+  </div>
+  <div class="tile">
+    <div class="lab">To the port-fee cliff</div>
+    <div class="fig count"><span id="c2">69</span><small>days</small></div>
+    <div class="countbar"><i id="b2"></i></div>
+    <div class="sub">Monday 9 November 2026. The Section&nbsp;301 vessel-fee truce expires six days after the vote.</div>
+  </div>
+</section>
+
+<!-- =============== PLATE 1 : THE TRACKER =============== -->
+<section class="plate">
+  <header>
+    <span class="pn">01</span>
+    <h2>The tracker, with our events on it</h2>
+    <span class="kicker">Jan 2025 &ndash; Aug 2026</span>
+  </header>
+  <div class="chartwrap">
+    <div class="chartbox"><svg id="chart1" class="chart" viewBox="0 0 1000 430" role="img"
+      aria-label="Line chart of presidential approval and disapproval from January 2025 to August 2026, with maritime policy events marked."></svg></div>
+    <div class="tip" id="tip1"></div>
+  </div>
+  <div class="legend">
+    <span><i style="background:var(--approve)"></i>Approve</span>
+    <span><i style="background:var(--disapprove)"></i>Disapprove</span>
+    <span><i class="dot" style="background:var(--ink);border-radius:50%"></i>Published Economist/YouGov reading</span>
+    <span><i style="background:var(--gap-fill);height:12px;border-radius:1px"></i>Net deficit</span>
+  </div>
+  <div class="evkey" id="evkey"></div>
+  <button class="tv-btn" data-toggle="tbl1" aria-expanded="false" aria-controls="tbl1">Show data table</button>
+  <div class="tbl-scroll" id="tbl1" hidden></div>
+  <p class="footnote">Marked points are published Economist/YouGov readings. The connecting path follows the arc of
+  The&nbsp;Economist&rsquo;s poll-of-polls between those readings and is interpolated for this demo &mdash; see the
+  method note at the foot of the page.</p>
+</section>
+
+<!-- =============== PLATE 2 : BY ISSUE =============== -->
+<section class="plate">
+  <header>
+    <span class="pn">02</span>
+    <h2>Every issue is underwater. Four of them are ours.</h2>
+    <span class="kicker">Net approval by issue, 2026</span>
+  </header>
+  <div class="chartwrap">
+    <div class="chartbox"><svg id="chart2" class="chart" viewBox="0 0 1000 400" role="img"
+      aria-label="Bar chart of net approval by policy issue in 2026, all values negative, with issues that transmit to freight highlighted."></svg></div>
+    <div class="tip" id="tip2"></div>
+  </div>
+  <div class="legend">
+    <span><i style="background:var(--disapprove);height:12px"></i>Transmits directly to freight</span>
+    <span><i style="background:var(--graphite);height:12px"></i>Background political weather</span>
+  </div>
+  <button class="tv-btn" data-toggle="tbl2" aria-expanded="false" aria-controls="tbl2">Show data table</button>
+  <div class="tbl-scroll" id="tbl2" hidden></div>
+  <div class="body">
+    <p>Tariffs are the president&rsquo;s worst-polling policy at <strong>&minus;29</strong>, worse than inflation.
+    That matters to a broker for one reason: a policy this unpopular is either abandoned or doubled down on, and
+    both paths move tonne-miles. Immigration at <strong>&minus;13</strong> remains the strongest card in the deck,
+    which is why it, and not trade, is the likely centre of the autumn campaign.</p>
+  </div>
+</section>
+
+<!-- =============== PLATE 3 : TRANSMISSION =============== -->
+<section class="plate">
+  <header>
+    <span class="pn">03</span>
+    <h2>Transmission board</h2>
+    <span class="kicker">Poll number &rarr; freight channel</span>
+  </header>
+  <div class="tbl-scroll">
+    <table class="board">
+      <thead><tr>
+        <th>Issue</th><th>Net</th><th>How it reaches the fixture</th><th>Exposed segments</th><th>Observed marker</th>
+      </tr></thead>
+      <tbody id="boardBody"></tbody>
+    </table>
+  </div>
+  <p class="footnote">Net approval figures are Economist/YouGov, 2026. Channels and segment exposure are the
+  HMS&nbsp;Conqueror desk view, not polling data.</p>
+</section>
+
+<!-- =============== PLATE 4 : THE MARKET SIDE =============== -->
+<section class="plate">
+  <header>
+    <span class="pn">04</span>
+    <h2>What the market has already paid for it</h2>
+    <span class="kicker">Latest published assessments</span>
+  </header>
+  <div class="rates" id="rates"></div>
+  <div class="body">
+    <p>The approval line and the TD3C line are not the same story, and it would be dishonest to draw them on one axis.
+    Approval is a slow political variable; Hormuz is a fast physical one. What links them is the
+    <strong>policy reaction function</strong> &mdash; an administration at &minus;29 on tariffs and &minus;28 on
+    inflation has a strong incentive to be seen bringing energy and shipping costs down, and a weak incentive to add
+    a new cost to every China-built box ship calling the US in the same quarter.</p>
+  </div>
+</section>
+
+<!-- =============== PLATE 5 : NOVEMBER =============== -->
+<section class="plate">
+  <header>
+    <span class="pn">05</span>
+    <h2>The November window</h2>
+    <span class="kicker">Six days, two decisions</span>
+  </header>
+  <div class="window">
+    <div class="wcol">
+      <div class="d">TUE 3 NOV 2026 &middot; <span id="c3">63</span> DAYS</div>
+      <h3>Midterm elections</h3>
+      <p>Approval at 33% is below the level that cost the president&rsquo;s party 41 House seats in 2018, and
+      independents have moved with it. A heavy loss argues for a pivot to cost-of-living wins; a narrow one argues
+      for escalation. Neither is neutral for the China-nexus fleet.</p>
+    </div>
+    <div class="wcol">
+      <div class="d">MON 9 NOV 2026 &middot; <span id="c4">69</span> DAYS</div>
+      <h3>Section 301 truce expires</h3>
+      <p>The one-year mutual suspension agreed on 10 November 2025 runs out. Absent a renewal, the USTR fee
+      schedule resumes against Chinese-built and Chinese-operated tonnage &mdash; and China&rsquo;s mirror fee
+      resumes against US-built, US-owned and US-operated ships.</p>
+      <table class="feebox">
+        <thead><tr><th>If fees resume</th><th>2026</th><th>2027</th><th>2028</th></tr></thead>
+        <tbody>
+          <tr><td>Chinese-built, non-Chinese operator</td><td class="num">$80/NT</td><td class="num">$110/NT</td><td class="num">$140/NT</td></tr>
+          <tr><td>Per container</td><td class="num">$153</td><td class="num">$195</td><td class="num">&mdash;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="body">
+    <p><strong>Desk implication.</strong> Any period charter or S&amp;P negotiation on China-built tonnage that
+    straddles 9 November carries an unpriced binary. On a 300,000&nbsp;dwt VLCC of roughly 156,000&nbsp;net tons, a
+    resumed $80/NT call fee is on the order of $12.5m per US port call &mdash; which is not a rate adjustment, it is a
+    trade-exclusion. Charterers will want the clause; owners of Korean and Japanese tonnage should be pricing the
+    scarcity now.</p>
+  </div>
+</section>
+
+<!-- =============== SOURCES =============== -->
+<section class="sources">
+  <h2>Credit, sources and method</h2>
+  <div class="credit">
+    <b>This page is an in-house adaptation of <i>The Economist</i>&rsquo;s Trump approval tracker.</b>
+    The concept, the net-approval framing and the approval figures reproduced here are
+    <i>The&nbsp;Economist</i>&rsquo;s and its polling partner YouGov&rsquo;s work, used here for internal
+    discussion with attribution. Original interactive:
+    <a href="https://www.economist.com/interactive/trump-approval-tracker" target="_blank" rel="noopener">economist.com/interactive/trump-approval-tracker</a>.
+    The maritime layer &mdash; the event timeline, the transmission board and the November window &mdash; is
+    HMS&nbsp;Conqueror&rsquo;s own.
+  </div>
+  <ol>
+    <li>The Economist, <i>Trump approval tracker</i> &mdash; poll-of-polls net approval; reported at &minus;25 in June 2026, the poorest reading in the series.</li>
+    <li>Economist/YouGov poll, 24&ndash;27 October 2025 &mdash; 39% approve / 58% disapprove (net &minus;19).</li>
+    <li>Economist/YouGov poll, 5&ndash;8 December 2025 &mdash; best net approval since September 2025.</li>
+    <li>Economist/YouGov poll, 6&ndash;9 February 2026 &mdash; net approval on the economy and immigration at second-term lows.</li>
+    <li>Economist/YouGov poll, 6&ndash;9 March 2026 &mdash; 40% approve / 55% disapprove, after a record-low net of &minus;21 the previous week.</li>
+    <li>Economist/YouGov poll, 20&ndash;23 March 2026 (n = 1,665) &mdash; economy 35% approve / 60% disapprove.</li>
+    <li>Economist/YouGov poll, 25&ndash;27 July 2026 &mdash; 34% approve / 62% disapprove (net &minus;28), driven down by Gen&nbsp;X, white Americans and independents.</li>
+    <li>Economist/YouGov poll, 7&ndash;10 August 2026 &mdash; 33% approve / 62% disapprove, lowest of either term.</li>
+    <li>Economist/YouGov issue nets, 2026 &mdash; taxes &minus;19, economy &minus;23, government spending &minus;27, inflation &minus;28, tariffs &minus;29, China-product tariffs &minus;20, forced-labour tariffs &minus;24, immigration 40/53.</li>
+    <li>Silver Bulletin poll average &mdash; trade net approval &minus;25.7; overall net around &minus;20 in August 2026.</li>
+    <li>Reuters/Ipsos, August 2026 &mdash; approval 33%; party splits (Republicans 87%, independents 34%, Democrats 7%); 71% disapprove on cost of living.</li>
+    <li>USTR, <i>Notice of Action, Section 301 investigation of China&rsquo;s targeting of the maritime, logistics and shipbuilding sectors</i>, 17 April 2025; fees effective 14 October 2025.</li>
+    <li>USTR and China Ministry of Transport &mdash; mutual one-year suspension of vessel fees from 10 November 2025 to 9 November 2026; scheduled 17 April 2026 step-up did not take effect.</li>
+    <li>Lloyd&rsquo;s List Intelligence, <i>Strait of Hormuz Brief</i>, 19 August 2026 &mdash; TD3C MEG&ndash;China above $520,000/day; 73 transits 10&ndash;16 August against 91 the prior week.</li>
+    <li>US Energy Information Administration / Reuters, March 2026 &mdash; VLCC MEG&ndash;China record $423,736/day, highest since the series began in November 2005.</li>
+    <li>Drewry World Container Index, 27 August 2026 &mdash; $4,473 per 40ft container, down 1% week on week.</li>
+    <li>BMTI, 28 April 2026 &mdash; Capesize 182,000&nbsp;dwt assessments in the high $67,000s/day. Jefferies 2026 Capesize forecast $27,500/day.</li>
+  </ol>
+  <div class="demo-note">
+    <b>Method note &mdash; read before circulating.</b> This is a demo build. Every figure carrying a source above is
+    a published number. The connecting path on Plate&nbsp;1 between published readings is interpolated to show the
+    shape of the series and should not be quoted point-by-point; before this goes to clients it needs the licensed
+    Economist or YouGov feed behind it, and the rate markers need a live Baltic/Drewry connection rather than
+    hand-entered assessments. The transmission board and the November window are desk opinion.
+  </div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- data ---------------- */
+
+  // Approval series. src = published Economist/YouGov reading; null = interpolated path point.
+  var SERIES = [
+    { d:"2025-01-25", a:50, p:39, src:"Start of second term" },
+    { d:"2025-02-20", a:49, p:44, src:null },
+    { d:"2025-03-20", a:46, p:48, src:null },
+    { d:"2025-04-20", a:42, p:54, src:null },
+    { d:"2025-05-20", a:43, p:53, src:null },
+    { d:"2025-06-20", a:42, p:54, src:null },
+    { d:"2025-07-20", a:41, p:56, src:null },
+    { d:"2025-08-20", a:41, p:55, src:null },
+    { d:"2025-09-20", a:40, p:57, src:null },
+    { d:"2025-10-27", a:39, p:58, src:"Economist/YouGov 24–27 Oct 2025" },
+    { d:"2025-11-20", a:41, p:56, src:null },
+    { d:"2025-12-08", a:41, p:56, src:"Economist/YouGov 5–8 Dec 2025" },
+    { d:"2026-01-15", a:39, p:57, src:null },
+    { d:"2026-02-09", a:37, p:59, src:"Economist/YouGov 6–9 Feb 2026" },
+    { d:"2026-03-02", a:37, p:58, src:"Record-low net −21" },
+    { d:"2026-03-09", a:40, p:55, src:"Economist/YouGov 6–9 Mar 2026" },
+    { d:"2026-04-15", a:37, p:59, src:null },
+    { d:"2026-05-15", a:36, p:60, src:null },
+    { d:"2026-06-15", a:36, p:61, src:"Economist tracker: net −25" },
+    { d:"2026-07-27", a:34, p:62, src:"Economist/YouGov 25–27 Jul 2026" },
+    { d:"2026-08-10", a:33, p:62, src:"Economist/YouGov 7–10 Aug 2026" }
+  ];
+
+  var EVENTS = [
+    { d:"2025-04-02", n:1, t:"‘Liberation Day’ reciprocal tariffs announced" },
+    { d:"2025-04-17", n:2, t:"USTR Section 301 action on Chinese-built tonnage" },
+    { d:"2025-10-14", n:3, t:"Port fees take effect; China retaliates" },
+    { d:"2025-10-22", n:4, t:"US sanctions Rosneft and Lukoil; tanker rates spike" },
+    { d:"2025-11-10", n:5, t:"Both sides suspend vessel fees for one year" },
+    { d:"2026-03-02", n:6, t:"Hormuz crisis; TD3C record $423,736/day" },
+    { d:"2026-08-19", n:7, t:"TD3C above $520,000/day; transits down 20% w/w" },
+    { d:"2026-11-03", n:8, t:"Midterm elections", fwd:true },
+    { d:"2026-11-09", n:9, t:"Section 301 truce expires", fwd:true }
+  ];
+
+  var ISSUES = [
+    { k:"Tariffs (all)",           v:-29, hot:true,  ch:"Box volumes, front-loading, lane re-routing",       seg:["Containers","Car carriers"], m:"WCI $4,473/40ft" },
+    { k:"Inflation",               v:-28, hot:false, ch:"Cost-of-living politics; pressure on energy prices", seg:["Product tankers","LPG"],     m:"—" },
+    { k:"Government spending",     v:-27, hot:false, ch:"US shipbuilding and Jones Act programme funding",    seg:["US-flag","Newbuilding"],     m:"—" },
+    { k:"Trade",                   v:-26, hot:true,  ch:"Tonne-mile demand; further USTR escalation risk",    seg:["Dry bulk","Containers"],     m:"Cape $27,500/day fcst" },
+    { k:"Tariffs, forced labour",  v:-24, hot:false, ch:"Origin-shifting of cargo; secondary lane effects",   seg:["Containers"],                m:"—" },
+    { k:"Economy",                 v:-23, hot:false, ch:"Consumer demand; newbuild ordering appetite",        seg:["Containers","Dry bulk"],     m:"—" },
+    { k:"Tariffs on China goods",  v:-20, hot:true,  ch:"Section 301 vessel fees; China-nexus asset discount",seg:["All segments","S&P values"], m:"Fees $0 to 9 Nov" },
+    { k:"Taxes",                   v:-19, hot:false, ch:"Tonnage-tax and depreciation treatment",             seg:["US owners"],                 m:"—" },
+    { k:"Immigration",             v:-13, hot:true,  ch:"Crew visas, port-call friction, manning costs",      seg:["All segments"],              m:"—" }
+  ];
+
+  var RATES = [
+    { lab:"VLCC TD3C · MEG–China", v:"$520k", u:"per day · w/e 19 Aug 2026",
+      n:"Roughly ten times a normal $20k–$60k/day market. War-risk cover, not supply, is setting the number.",
+      src:"Lloyd’s List Intelligence", lead:true },
+    { lab:"Hormuz transits", v:"73", u:"vessels · 10–16 Aug 2026",
+      n:"Down from 91 the previous week. A small core of operators is still running the strait.",
+      src:"Lloyd’s List Intelligence" },
+    { lab:"Drewry WCI", v:"$4,473", u:"per 40ft · 27 Aug 2026",
+      n:"Down 1% week on week. Box rates eased after the November fee suspension and have not re-tightened.",
+      src:"Drewry" },
+    { lab:"Capesize 182k dwt", v:"$67.8k", u:"per day · late Apr 2026",
+      n:"Well ahead of the $27,500/day full-year forecast. Tonnage tightness across both basins.",
+      src:"BMTI · Jefferies" }
+  ];
+
+  /* ---------------- helpers ---------------- */
+
+  var MS = 86400000;
+  function dt(s){ var p = s.split("-"); return Date.UTC(+p[0], +p[1]-1, +p[2]); }
+  function fmt(s){
+    var M = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    var p = s.split("-");
+    return +p[2] + " " + M[+p[1]-1] + " " + p[0];
+  }
+  function el(tag, attrs, text){
+    var n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (var k in attrs) { if (attrs[k] !== null && attrs[k] !== undefined) n.setAttribute(k, attrs[k]); }
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+  function cssv(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  /* ---------------- countdowns ---------------- */
+
+  var now = Date.now();
+  var toMid = Math.max(0, Math.ceil((dt("2026-11-03") - now) / MS));
+  var toFee = Math.max(0, Math.ceil((dt("2026-11-09") - now) / MS));
+  ["c1","c3"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent = toMid; });
+  ["c2","c4"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent = toFee; });
+  // bars fill as the window closes: measured from the 10 Nov 2025 truce
+  var span = dt("2026-11-09") - dt("2025-11-10");
+  var elapsed = Math.min(1, Math.max(0, (now - dt("2025-11-10")) / span));
+  var b1 = document.getElementById("b1"), b2 = document.getElementById("b2");
+  if (b1) b1.style.width = (elapsed*100).toFixed(1) + "%";
+  if (b2) b2.style.width = (elapsed*100).toFixed(1) + "%";
+  var td = document.getElementById("today");
+  if (td) td.textContent = new Date().toLocaleDateString("en-GB", { day:"numeric", month:"long", year:"numeric" });
+
+  /* ---------------- plate 1 : tracker ---------------- */
+
+  function drawTracker(){
+    var svg = document.getElementById("chart1");
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    var W = 1000, H = 430, m = { t: 52, r: 146, b: 62, l: 46 };
+    var iw = W - m.l - m.r, ih = H - m.t - m.b;
+    var x0 = dt("2024-12-10"), x1 = dt("2026-11-25");
+    var y0 = 26, y1 = 66;
+    var X = function(d){ return m.l + (dt(d) - x0) / (x1 - x0) * iw; };
+    var Y = function(v){ return m.t + (y1 - v) / (y1 - y0) * ih; };
+
+    var C = { app: cssv("--approve"), dis: cssv("--disapprove"), gap: cssv("--gap-fill"),
+              rule: cssv("--rule-soft"), ink3: cssv("--ink-3"), ink2: cssv("--ink-2"),
+              ink: cssv("--ink"), card: cssv("--card"), acc: cssv("--accent"), acs: cssv("--accent-soft") };
+
+    // forward zone — everything after today
+    var todayISO = new Date().toISOString().slice(0,10);
+    var fx = Math.max(X("2026-08-20"), Math.min(X(todayISO), m.l + iw));
+    svg.appendChild(el("rect", { x:fx, y:m.t, width:(m.l+iw)-fx, height:ih, fill:C.acs, opacity:"0.55" }));
+    svg.appendChild(el("text", { x:fx+8, y:m.t+ih-9, fill:C.acc, "font-size":"10.5",
+      "font-family":"var(--f-mono)", "letter-spacing":"0.1em" }, "AHEAD"));
+
+    // gridlines + y labels
+    for (var v = 30; v <= 65; v += 5){
+      svg.appendChild(el("line", { x1:m.l, x2:m.l+iw, y1:Y(v), y2:Y(v), stroke:C.rule, "stroke-width":1 }));
+      svg.appendChild(el("text", { x:m.l-9, y:Y(v)+4, fill:C.ink3, "font-size":"11", "text-anchor":"end",
+        "font-family":"var(--f-mono)" }, v + "%"));
+    }
+    // year/quarter ticks
+    ["2025-01-01","2025-04-01","2025-07-01","2025-10-01","2026-01-01","2026-04-01","2026-07-01","2026-10-01"]
+    .forEach(function(d){
+      var lx = X(d);
+      svg.appendChild(el("line", { x1:lx, x2:lx, y1:m.t+ih, y2:m.t+ih+6, stroke:C.ink3, "stroke-width":1, opacity:"0.5" }));
+      var p = d.split("-"), Q = { "01":"Q1", "04":"Q2", "07":"Q3", "10":"Q4" }[p[1]];
+      svg.appendChild(el("text", { x:lx, y:m.t+ih+21, fill:C.ink3, "font-size":"10.5", "text-anchor":"middle",
+        "font-family":"var(--f-mono)" }, Q));
+      if (p[1] === "01"){
+        svg.appendChild(el("text", { x:lx, y:m.t+ih+37, fill:C.ink2, "font-size":"12", "text-anchor":"middle",
+          "font-weight":"600" }, p[0]));
+      }
+    });
+
+    // net-deficit band between the two lines
+    var band = "";
+    SERIES.forEach(function(r,i){ band += (i?"L":"M") + X(r.d) + "," + Y(r.a); });
+    for (var j = SERIES.length - 1; j >= 0; j--){ band += "L" + X(SERIES[j].d) + "," + Y(SERIES[j].p); }
+    svg.appendChild(el("path", { d: band + "Z", fill: C.gap }));
+
+    // lines
+    function line(key, colour){
+      var d = "";
+      SERIES.forEach(function(r,i){ d += (i?"L":"M") + X(r.d) + "," + Y(r[key]); });
+      svg.appendChild(el("path", { d:d, fill:"none", stroke:colour, "stroke-width":2,
+        "stroke-linejoin":"round", "stroke-linecap":"round" }));
+    }
+    line("p", C.dis);
+    line("a", C.app);
+
+    // published-reading markers (2px surface ring)
+    SERIES.forEach(function(r){
+      if (!r.src) return;
+      ["a","p"].forEach(function(k){
+        svg.appendChild(el("circle", { cx:X(r.d), cy:Y(r[k]), r:4.5,
+          fill: k === "a" ? C.app : C.dis, stroke:C.card, "stroke-width":2 }));
+      });
+    });
+
+    // right-hand direct labels
+    var last = SERIES[SERIES.length-1];
+    svg.appendChild(el("text", { x:m.l+iw+12, y:Y(last.a)+4, fill:C.app, "font-size":"13", "font-weight":"600" },
+      "Approve " + last.a + "%"));
+    svg.appendChild(el("text", { x:m.l+iw+12, y:Y(last.p)+4, fill:C.dis, "font-size":"13", "font-weight":"600" },
+      "Disapprove " + last.p + "%"));
+    svg.appendChild(el("text", { x:m.l+iw+12, y:(Y(last.a)+Y(last.p))/2+4, fill:C.ink2, "font-size":"12",
+      "font-family":"var(--f-mono)" }, "net −29"));
+
+    // event pins — staggered onto two rows so near-dated events never collide
+    var rowLastX = [-1e6, -1e6];
+    EVENTS.forEach(function(e){
+      var ex = X(e.d);
+      var row = (ex - rowLastX[0] >= 19) ? 0 : (ex - rowLastX[1] >= 19 ? 1 : 0);
+      rowLastX[row] = ex;
+      var cy = m.t - 26 + row * 19;
+      svg.appendChild(el("line", { x1:ex, x2:ex, y1:cy + 9, y2:m.t+ih, stroke: e.fwd ? C.acc : C.ink3,
+        "stroke-width":1, "stroke-dasharray": e.fwd ? "3 3" : "2 4", opacity: e.fwd ? "0.85" : "0.5" }));
+      svg.appendChild(el("circle", { cx:ex, cy:cy, r:8, fill: C.card,
+        stroke: e.fwd ? C.acc : C.ink3, "stroke-width": e.fwd ? 1.5 : 1 }));
+      svg.appendChild(el("text", { x:ex, y:cy+3.5, "text-anchor":"middle", "font-size":"10",
+        "font-family":"var(--f-mono)", "font-weight":"600", fill: e.fwd ? C.acc : C.ink2 }, e.n));
+    });
+
+    // hover layer
+    var hv = el("g", { });
+    var cross = el("line", { x1:0, x2:0, y1:m.t, y2:m.t+ih, stroke:C.ink3, "stroke-width":1, opacity:"0" });
+    var hd1 = el("circle", { r:5.5, fill:"none", stroke:C.card, "stroke-width":2, opacity:"0" });
+    var hd2 = el("circle", { r:5.5, fill:"none", stroke:C.card, "stroke-width":2, opacity:"0" });
+    hv.appendChild(cross); hv.appendChild(hd1); hv.appendChild(hd2);
+    svg.appendChild(hv);
+    var hit = el("rect", { x:m.l, y:m.t, width:iw, height:ih, fill:"transparent", style:"cursor:crosshair" });
+    svg.appendChild(hit);
+
+    var tip = document.getElementById("tip1");
+    var wrapEl = svg.closest(".chartwrap");
+
+    function move(ev){
+      var box = svg.getBoundingClientRect();
+      var sx = (ev.clientX - box.left) / box.width * W;
+      var best = 0, bd = Infinity;
+      SERIES.forEach(function(r,i){ var d = Math.abs(X(r.d) - sx); if (d < bd){ bd = d; best = i; } });
+      var r = SERIES[best], px = X(r.d);
+      cross.setAttribute("x1", px); cross.setAttribute("x2", px); cross.setAttribute("opacity","0.5");
+      hd1.setAttribute("cx", px); hd1.setAttribute("cy", Y(r.a)); hd1.setAttribute("fill", C.app); hd1.setAttribute("opacity","1");
+      hd2.setAttribute("cx", px); hd2.setAttribute("cy", Y(r.p)); hd2.setAttribute("fill", C.dis); hd2.setAttribute("opacity","1");
+      var net = r.a - r.p;
+      tip.innerHTML =
+        '<div class="t-d">' + fmt(r.d) + '</div>' +
+        '<div class="t-r"><span>Approve</span><b>' + r.a + '%</b></div>' +
+        '<div class="t-r"><span>Disapprove</span><b>' + r.p + '%</b></div>' +
+        '<div class="t-r"><span>Net</span><b>' + (net > 0 ? "+" : "−") + Math.abs(net) + '</b></div>' +
+        (r.src ? '<div class="t-src">' + r.src + '</div>'
+               : '<div class="t-src">Interpolated path point</div>');
+      var wb = wrapEl.getBoundingClientRect();
+      tip.style.left = (px / W * box.width + (box.left - wb.left)) + "px";
+      tip.style.top  = (Math.min(Y(r.a), Y(r.p)) / H * box.height + (box.top - wb.top) - 12) + "px";
+      tip.style.opacity = "1";
+    }
+    function leave(){
+      cross.setAttribute("opacity","0"); hd1.setAttribute("opacity","0"); hd2.setAttribute("opacity","0");
+      tip.style.opacity = "0";
+    }
+    hit.addEventListener("pointermove", move);
+    hit.addEventListener("pointerleave", leave);
+  }
+
+  /* ---------------- plate 2 : issues ---------------- */
+
+  function drawIssues(){
+    var svg = document.getElementById("chart2");
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    var W = 1000, H = 400, m = { t: 26, r: 40, b: 36, l: 196 };
+    var iw = W - m.l - m.r, ih = H - m.t - m.b;
+    var lo = -34, hi = 4;
+    var X = function(v){ return m.l + (v - lo) / (hi - lo) * iw; };
+    var rowH = ih / ISSUES.length, bh = Math.min(20, rowH * 0.56);
+
+    var C = { dis: cssv("--disapprove"), gr: cssv("--graphite"), rule: cssv("--rule-soft"),
+              ink3: cssv("--ink-3"), ink2: cssv("--ink-2"), ink: cssv("--ink"), card: cssv("--card") };
+
+    // scale ticks
+    for (var v = -30; v <= 0; v += 10){
+      svg.appendChild(el("line", { x1:X(v), x2:X(v), y1:m.t-6, y2:m.t+ih, stroke:C.rule, "stroke-width":1 }));
+      svg.appendChild(el("text", { x:X(v), y:m.t+ih+20, fill:C.ink3, "font-size":"11", "text-anchor":"middle",
+        "font-family":"var(--f-mono)" }, v === 0 ? "0" : "−" + Math.abs(v)));
+    }
+    // zero baseline, emphasised
+    svg.appendChild(el("line", { x1:X(0), x2:X(0), y1:m.t-10, y2:m.t+ih+4, stroke:C.ink, "stroke-width":1.5 }));
+    svg.appendChild(el("text", { x:X(0)+7, y:m.t-14, fill:C.ink2, "font-size":"10.5",
+      "font-family":"var(--f-mono)", "letter-spacing":"0.08em" }, "BREAK-EVEN"));
+
+    var tip = document.getElementById("tip2");
+    var wrapEl = svg.closest(".chartwrap");
+
+    ISSUES.forEach(function(r, i){
+      var cy = m.t + rowH * i + rowH / 2;
+      var xa = X(r.v), xb = X(0);
+      var colour = r.hot ? C.dis : C.gr;
+
+      // rounded data-end at the value, square against the baseline
+      var rad = 4;
+      var d = "M" + xb + "," + (cy - bh/2) +
+              "H" + (xa + rad) +
+              "a" + rad + "," + rad + " 0 0 0 " + (-rad) + "," + rad +
+              "V" + (cy + bh/2 - rad) +
+              "a" + rad + "," + rad + " 0 0 0 " + rad + "," + rad +
+              "H" + xb + "Z";
+      var bar = el("path", { d:d, fill:colour });
+      svg.appendChild(bar);
+
+      // label
+      svg.appendChild(el("text", { x:m.l-14, y:cy+4.5, "text-anchor":"end", "font-size":"13.5",
+        fill: r.hot ? C.ink : C.ink2, "font-weight": r.hot ? "600" : "400" }, r.k));
+      // direct value
+      svg.appendChild(el("text", { x:xa-9, y:cy+4.5, "text-anchor":"end", "font-size":"13",
+        fill: colour, "font-weight":"600", "font-family":"var(--f-mono)" }, "−" + Math.abs(r.v)));
+
+      var hit = el("rect", { x:m.l-190, y:cy-rowH/2, width:iw+190, height:rowH, fill:"transparent",
+        style:"cursor:pointer" });
+      hit.addEventListener("pointerenter", function(){
+        bar.setAttribute("opacity","0.78");
+        tip.innerHTML =
+          '<div class="t-d">' + r.k.toUpperCase() + '</div>' +
+          '<div class="t-r"><span>Net approval</span><b>−' + Math.abs(r.v) + '</b></div>' +
+          '<div class="t-src">' + r.ch + '<br><br>' + r.seg.join(" · ") + '</div>';
+        var box = svg.getBoundingClientRect(), wb = wrapEl.getBoundingClientRect();
+        tip.style.left = (X(r.v/2) / W * box.width + (box.left - wb.left)) + "px";
+        tip.style.top  = (cy / H * box.height + (box.top - wb.top) - 10) + "px";
+        tip.style.opacity = "1";
+      });
+      hit.addEventListener("pointerleave", function(){ bar.setAttribute("opacity","1"); tip.style.opacity = "0"; });
+      svg.appendChild(hit);
+    });
+  }
+
+  /* ---------------- static sections ---------------- */
+
+  function fill(){
+    // event key
+    var ek = document.getElementById("evkey");
+    ek.innerHTML = EVENTS.map(function(e){
+      return '<div class="' + (e.fwd ? "fwd" : "") + '"><b>' + e.n + '</b><span>' + e.t +
+             ' <em>' + fmt(e.d) + '</em></span></div>';
+    }).join("");
+
+    // transmission board
+    document.getElementById("boardBody").innerHTML = ISSUES.map(function(r){
+      return '<tr><td>' + r.k + '</td>' +
+             '<td class="num"><span class="net">−' + Math.abs(r.v) + '</span></td>' +
+             '<td>' + r.ch + '</td>' +
+             '<td>' + r.seg.map(function(s){
+                return '<span class="chip' + (r.hot ? " hot" : "") + '">' + s + '</span>'; }).join("") + '</td>' +
+             '<td class="num">' + r.m + '</td></tr>';
+    }).join("");
+
+    // rate tiles
+    document.getElementById("rates").innerHTML = RATES.map(function(r){
+      return '<div class="rate' + (r.lead ? " lead" : "") + '">' +
+             '<div class="lab">' + r.lab + '</div>' +
+             '<div class="v">' + r.v + '</div>' +
+             '<div class="u">' + r.u + '</div>' +
+             '<div class="n">' + r.n + '</div>' +
+             '<div class="src">' + r.src + '</div></div>';
+    }).join("");
+
+    // table views
+    document.getElementById("tbl1").innerHTML =
+      '<table><thead><tr><th>Date</th><th>Approve</th><th>Disapprove</th><th>Net</th><th>Provenance</th></tr></thead><tbody>' +
+      SERIES.map(function(r){
+        var n = r.a - r.p;
+        return '<tr><td class="num">' + fmt(r.d) + '</td><td class="num">' + r.a + '%</td><td class="num">' +
+               r.p + '%</td><td class="num">' + (n>0?"+":"−") + Math.abs(n) + '</td><td>' +
+               (r.src || "Interpolated") + '</td></tr>';
+      }).join("") + '</tbody></table>';
+
+    document.getElementById("tbl2").innerHTML =
+      '<table><thead><tr><th>Issue</th><th>Net approval</th><th>Freight transmission</th></tr></thead><tbody>' +
+      ISSUES.map(function(r){
+        return '<tr><td>' + r.k + '</td><td class="num">−' + Math.abs(r.v) + '</td><td>' +
+               (r.hot ? "Direct" : "Background") + ' — ' + r.ch + '</td></tr>';
+      }).join("") + '</tbody></table>';
+
+    // toggles
+    Array.prototype.forEach.call(document.querySelectorAll("[data-toggle]"), function(btn){
+      btn.addEventListener("click", function(){
+        var t = document.getElementById(btn.getAttribute("data-toggle"));
+        var open = t.hidden;
+        t.hidden = !open;
+        btn.setAttribute("aria-expanded", String(open));
+        btn.textContent = open ? "Hide data table" : "Show data table";
+      });
+    });
+  }
+
+  function drawAll(){ drawTracker(); drawIssues(); }
+
+  fill();
+  drawAll();
+
+  // redraw on theme flip so SVG picks up the new tokens
+  if (window.matchMedia){
+    var mq = window.matchMedia("(prefers-color-scheme: dark)");
+    if (mq.addEventListener) mq.addEventListener("change", drawAll);
+  }
+  new MutationObserver(drawAll).observe(document.documentElement, { attributes:true, attributeFilter:["data-theme"] });
+
+  var rt;
+  window.addEventListener("resize", function(){ clearTimeout(rt); rt = setTimeout(drawAll, 160); });
+})();
+</script>
+</body>
+</html>
