@@ -14,13 +14,14 @@ tracker](https://www.economist.com/interactive/trump-approval-tracker), rebuilt 
 desk. It keeps the original's net-approval framing and reproduces its published figures with
 attribution, then adds the maritime layer:
 
-- **Plate 01** — the approval series since January 2025 with our policy events pinned on it
-  (Section 301, the tariff rounds, the sanctions and Hormuz spikes).
-- **Plate 02** — net approval by issue, with the four issues that transmit directly to freight
-  picked out from the background political weather.
+- **Plate 01** — net approval from +11 at inauguration to −29, with our policy events pinned on it
+  (Section 301, the tariff rounds, the Hormuz spike).
+- **Plate 02** — net approval by issue, with the three that reach our fixtures directly picked out
+  from the background political weather.
 - **Plate 03** — a transmission board mapping each poll number to the freight channel it travels
-  down and the segments exposed to it.
-- **Plate 04** — the published rate assessments the market has already moved to.
+  down, the segments exposed, and what the desk would actually do about it.
+- **Plate 04** — the Section 301 vessel fee: zero today, $80/NT if it reverts, ≈$12.5m per VLCC US
+  call. Market context marks sit below it, visually subordinated.
 - **Plate 05** — the November window: the midterms on 3 November 2026 and the expiry of the
   Section 301 vessel-fee truce on 9 November 2026, six days apart.
 
@@ -38,11 +39,25 @@ Single self-contained file — no build step, no runtime dependencies. Charts ar
 Light and dark themes both ship. Every chart has a keyboard-reachable data-table view, and the
 series colours are validated for colourblind separation and contrast against both window surfaces.
 
-**Demo status.** Figures carrying a source in the "Credit, sources and method" section are
-published numbers. The path drawn *between* published readings on Plate 01 is interpolated to show
-the shape of the series and should not be quoted point-by-point. Before this goes to clients it
-needs the licensed Economist/YouGov feed behind it and a live Baltic/Drewry connection in place of
-hand-entered rate assessments. The transmission board and the November window are desk opinion.
+### Provenance
+
+Every figure on the page carries one of three tags, and the key is repeated in the sources section:
+
+| Tag | Meaning |
+|---|---|
+| **Published** | A figure published by the named source. |
+| **Desk-entered** | Typed in by hand from secondary reporting. Verify before quoting; replace with a live feed. |
+| **Our calculation** | Derived by us from published inputs, with the arithmetic shown. |
+
+**Plate 01 plots only published readings** — seven of them, at the dates they were published.
+Nothing is interpolated: where more than a hundred days separate two readings the connector is
+drawn dashed, because there is no data in between. (An earlier draft drew a smooth monthly line
+through invented intermediate points; that has been removed.)
+
+**Demo status.** The two market-context marks were hand-entered from secondary reporting rather
+than read off a terminal — the TD3C figure in particular is extraordinary and wants checking
+against Baltic. Wire the page to a live Baltic/Drewry feed and the licensed Economist/YouGov feed
+before it goes near a client. The transmission board and the November window are desk opinion.
 
 ### Viewing it
 
