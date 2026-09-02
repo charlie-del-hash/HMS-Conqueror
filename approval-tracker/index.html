@@ -369,6 +369,42 @@ h1 em{ font-style:italic; color:var(--aqua); }
   box-shadow: inset 0 1px 3px var(--bezel), inset 0 0 0 1px var(--rule-soft);
 }
 svg.chart{ display:block; width:100%; height:auto; min-width:580px; }
+
+/* ---- chart ink -----------------------------------------------------
+   Every colour the SVGs use lives here, on tokens. The charts carry
+   classes, not snapshotted hex, so a change of appearance repaints them
+   the same way it repaints the rest of the page - no observer, no
+   redraw, no getComputedStyle. -------------------------------------- */
+.chart .c-grid    { stroke: var(--rule-soft); }
+.chart .c-axis    { stroke: var(--ink-3); opacity:.5; }
+.chart .c-tick    { fill: var(--ink-3); }
+.chart .c-yr      { fill: var(--ink-2); font-weight:600; }
+.chart .c-zero    { stroke: var(--ink); }
+.chart .c-zerolab { fill: var(--ink); }
+.chart .c-zerotag { fill: var(--ink-2); }
+.chart .c-area    { fill: var(--gap-fill); }
+.chart .c-line    { stroke: var(--disapprove); fill:none; }
+.chart .c-mk      { fill: var(--disapprove); stroke: var(--card); }
+.chart .c-mk-agg  { fill: var(--card); stroke: var(--disapprove); }
+.chart .c-lab2    { fill: var(--ink-2); }
+.chart .c-labdis  { fill: var(--disapprove); }
+.chart .c-fwd     { fill: var(--accent-soft); }
+.chart .c-fwdtag  { fill: var(--accent); }
+.chart .c-pinline { stroke: var(--ink-3); }
+.chart .c-pin     { stroke: var(--ink-3); fill: var(--card); }
+.chart .c-pinn    { fill: var(--ink-2); }
+.chart .c-pinline.fwd, .chart .c-pin.fwd { stroke: var(--accent); }
+.chart .c-pinn.fwd{ fill: var(--accent); }
+.chart .c-cross   { stroke: var(--ink-3); }
+.chart .c-halo    { stroke: var(--disapprove); fill:none; }
+.chart .c-bar     { fill: var(--graphite); }
+.chart .c-bar.hot { fill: var(--disapprove); }
+.chart .c-barlab  { fill: var(--ink-2); }
+.chart .c-barlab.hot { fill: var(--ink); font-weight:600; }
+.chart .c-barval  { fill: var(--graphite); }
+.chart .c-barval.hot { fill: var(--disapprove); }
+.chart .c-hit     { fill: transparent; }
+
 .legend{ display:flex; gap:20px; flex-wrap:wrap; align-items:center; margin-top:14px;
          font-size:12.5px; color:var(--ink-2); }
 .legend span{ display:flex; align-items:center; gap:7px; }
@@ -1008,7 +1044,6 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
     if (text !== undefined) n.textContent = text;
     return n;
   }
-  function cssv(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
 
   /* ============================ COUNTDOWNS ============================ */
   var now = Date.now();
@@ -1042,36 +1077,31 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
     var Y = function(v){ return m.t + (y1 - v) / (y1 - y0) * ih; };
     var zeroY = Y(0);
 
-    var C = { dis: cssv("--disapprove"), gap: cssv("--gap-fill"), rule: cssv("--rule-soft"),
-              ink3: cssv("--ink-3"), ink2: cssv("--ink-2"), ink: cssv("--ink"),
-              card: cssv("--card"), acc: cssv("--accent"), acs: cssv("--accent-soft") };
-
     // forward zone — everything after today
     var todayISO = new Date().toISOString().slice(0,10);
     var fx = Math.max(X("2026-08-20"), Math.min(X(todayISO), m.l + iw));
-    svg.appendChild(el("rect", { x:fx, y:m.t, width:(m.l+iw)-fx, height:ih, fill:C.acs, opacity:"0.6" }));
-    svg.appendChild(el("text", { x:fx+8, y:m.t+ih-9, fill:C.acc, "font-size":"10.5",
+    svg.appendChild(el("rect", { "class":"c-fwd", x:fx, y:m.t, width:(m.l+iw)-fx, height:ih, opacity:"0.6" }));
+    svg.appendChild(el("text", { "class":"c-fwdtag", x:fx+8, y:m.t+ih-9, "font-size":"10.5",
       "font-family":"var(--f-mono)", "letter-spacing":"0.1em" }, "AHEAD"));
 
     // gridlines
     for (var v = -30; v <= 10; v += 10){
       if (v === 0) continue;
-      svg.appendChild(el("line", { x1:m.l, x2:m.l+iw, y1:Y(v), y2:Y(v), stroke:C.rule, "stroke-width":1 }));
-      svg.appendChild(el("text", { x:m.l-10, y:Y(v)+4, fill:C.ink3, "font-size":"11", "text-anchor":"end",
-        "font-family":"var(--f-mono)" }, sgn(v)));
+      svg.appendChild(el("line", { "class":"c-grid", x1:m.l, x2:m.l+iw, y1:Y(v), y2:Y(v), "stroke-width":1 }));
+      svg.appendChild(el("text", { "class":"c-tick", x:m.l-10, y:Y(v)+4, "font-size":"11",
+        "text-anchor":"end", "font-family":"var(--f-mono)" }, sgn(v)));
     }
 
     // quarter ticks
     ["2025-01-01","2025-04-01","2025-07-01","2025-10-01","2026-01-01","2026-04-01","2026-07-01","2026-10-01"]
     .forEach(function(d){
-      var lx = X(d), p = d.split("-"), Q = { "01":"Q1","04":"Q2","07":"Q3","10":"Q4" }[p[1]];
-      svg.appendChild(el("line", { x1:lx, x2:lx, y1:m.t+ih, y2:m.t+ih+6, stroke:C.ink3,
-        "stroke-width":1, opacity:"0.5" }));
-      svg.appendChild(el("text", { x:lx, y:m.t+ih+21, fill:C.ink3, "font-size":"10.5",
+      var lx = X(d), pp = d.split("-"), Q = { "01":"Q1","04":"Q2","07":"Q3","10":"Q4" }[pp[1]];
+      svg.appendChild(el("line", { "class":"c-axis", x1:lx, x2:lx, y1:m.t+ih, y2:m.t+ih+6, "stroke-width":1 }));
+      svg.appendChild(el("text", { "class":"c-tick", x:lx, y:m.t+ih+21, "font-size":"10.5",
         "text-anchor":"middle", "font-family":"var(--f-mono)" }, Q));
-      if (p[1] === "01"){
-        svg.appendChild(el("text", { x:lx, y:m.t+ih+37, fill:C.ink2, "font-size":"12",
-          "text-anchor":"middle", "font-weight":"600" }, p[0]));
+      if (pp[1] === "01"){
+        svg.appendChild(el("text", { "class":"c-yr", x:lx, y:m.t+ih+37, "font-size":"12",
+          "text-anchor":"middle" }, pp[0]));
       }
     });
 
@@ -1082,64 +1112,58 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
     var area = "";
     NET.forEach(function(r,i){ area += (i?"L":"M") + X(r.d) + "," + Y(r.v); });
     area += "L" + X(NET[NET.length-1].d) + "," + zeroY + "L" + X(NET[0].d) + "," + zeroY + "Z";
-    svg.appendChild(el("path", { d:area, fill:C.gap, "clip-path":"url(#belowZero)" }));
+    svg.appendChild(el("path", { "class":"c-area", d:area, "clip-path":"url(#belowZero)" }));
 
     // connectors — dashed where more than 100 days separate two readings
     for (var i = 1; i < NET.length; i++){
       var gapDays = (dt(NET[i].d) - dt(NET[i-1].d)) / MS;
-      svg.appendChild(el("line", {
+      svg.appendChild(el("line", { "class":"c-line",
         x1:X(NET[i-1].d), y1:Y(NET[i-1].v), x2:X(NET[i].d), y2:Y(NET[i].v),
-        stroke:C.dis, "stroke-width":2, "stroke-linecap":"round",
+        "stroke-width":2, "stroke-linecap":"round",
         "stroke-dasharray": gapDays > 100 ? "5 5" : null,
-        opacity: gapDays > 100 ? "0.55" : "1"
-      }));
+        opacity: gapDays > 100 ? "0.55" : "1" }));
     }
 
-    // break-even line, emphasised
-    svg.appendChild(el("line", { x1:m.l-10, x2:m.l+iw, y1:zeroY, y2:zeroY, stroke:C.ink, "stroke-width":1.5 }));
-    svg.appendChild(el("text", { x:m.l-10, y:zeroY+4, fill:C.ink, "font-size":"11", "text-anchor":"end",
-      "font-family":"var(--f-mono)", "font-weight":"600" }, "0"));
-    svg.appendChild(el("text", { x:m.l+6, y:zeroY-8, fill:C.ink2, "font-size":"10.5",
+    // break-even, emphasised
+    svg.appendChild(el("line", { "class":"c-zero", x1:m.l-10, x2:m.l+iw, y1:zeroY, y2:zeroY, "stroke-width":1.5 }));
+    svg.appendChild(el("text", { "class":"c-zerolab", x:m.l-10, y:zeroY+4, "font-size":"11",
+      "text-anchor":"end", "font-family":"var(--f-mono)", "font-weight":"600" }, "0"));
+    svg.appendChild(el("text", { "class":"c-zerotag", x:m.l+6, y:zeroY-8, "font-size":"10.5",
       "font-family":"var(--f-mono)", "letter-spacing":"0.08em" }, "BREAK-EVEN"));
 
     // markers: filled = single poll, hollow ring = poll-of-polls
     NET.forEach(function(r){
-      if (r.kind === "poll"){
-        svg.appendChild(el("circle", { cx:X(r.d), cy:Y(r.v), r:5,
-          fill:C.dis, stroke:C.card, "stroke-width":2 }));
-      } else {
-        svg.appendChild(el("circle", { cx:X(r.d), cy:Y(r.v), r:5,
-          fill:C.card, stroke:C.dis, "stroke-width":2.5 }));
-      }
+      svg.appendChild(el("circle", { "class": r.kind === "poll" ? "c-mk" : "c-mk-agg",
+        cx:X(r.d), cy:Y(r.v), r:5, "stroke-width": r.kind === "poll" ? 2 : 2.5 }));
     });
 
     // endpoint labels
     var first = NET[0], last = NET[NET.length-1];
-    svg.appendChild(el("text", { x:X(first.d), y:Y(first.v)-14, fill:C.ink2, "font-size":"13",
-      "font-weight":"600", "text-anchor":"middle" }, "+11"));
-    svg.appendChild(el("text", { x:m.l+iw+14, y:Y(last.v)+5, fill:C.dis, "font-size":"15",
-      "font-weight":"700" }, "−29 now"));
+    svg.appendChild(el("text", { "class":"c-lab2", x:X(first.d), y:Y(first.v)-14, "font-size":"13",
+      "font-weight":"600", "text-anchor":"middle" }, sgn(first.v)));
+    svg.appendChild(el("text", { "class":"c-labdis", x:m.l+iw+14, y:Y(last.v)+5, "font-size":"15",
+      "font-weight":"700" }, sgn(last.v) + " now"));
 
     // event pins, staggered across two rows
     var rowLastX = [-1e6, -1e6];
     EVENTS.forEach(function(e){
-      var ex = X(e.d);
+      var ex = X(e.d), fwd = e.fwd ? " fwd" : "";
       var row = (ex - rowLastX[0] >= 19) ? 0 : (ex - rowLastX[1] >= 19 ? 1 : 0);
       rowLastX[row] = ex;
       var cy = m.t - 26 + row * 19;
-      svg.appendChild(el("line", { x1:ex, x2:ex, y1:cy+9, y2:m.t+ih, stroke: e.fwd ? C.acc : C.ink3,
+      svg.appendChild(el("line", { "class":"c-pinline" + fwd, x1:ex, x2:ex, y1:cy+9, y2:m.t+ih,
         "stroke-width":1, "stroke-dasharray": e.fwd ? "3 3" : "2 4", opacity: e.fwd ? "0.85" : "0.45" }));
-      svg.appendChild(el("circle", { cx:ex, cy:cy, r:8, fill:C.card,
-        stroke: e.fwd ? C.acc : C.ink3, "stroke-width": e.fwd ? 1.5 : 1 }));
-      svg.appendChild(el("text", { x:ex, y:cy+3.5, "text-anchor":"middle", "font-size":"10",
-        "font-family":"var(--f-mono)", "font-weight":"600", fill: e.fwd ? C.acc : C.ink2 }, e.n));
+      svg.appendChild(el("circle", { "class":"c-pin" + fwd, cx:ex, cy:cy, r:8,
+        "stroke-width": e.fwd ? 1.5 : 1 }));
+      svg.appendChild(el("text", { "class":"c-pinn" + fwd, x:ex, y:cy+3.5, "text-anchor":"middle",
+        "font-size":"10", "font-family":"var(--f-mono)", "font-weight":"600" }, e.n));
     });
 
     // hover
-    var cross = el("line", { x1:0, x2:0, y1:m.t, y2:m.t+ih, stroke:C.ink3, "stroke-width":1, opacity:"0" });
-    var halo  = el("circle", { r:9, fill:"none", stroke:C.dis, "stroke-width":2, opacity:"0" });
+    var cross = el("line", { "class":"c-cross", x1:0, x2:0, y1:m.t, y2:m.t+ih, "stroke-width":1, opacity:"0" });
+    var halo  = el("circle", { "class":"c-halo", r:9, "stroke-width":2, opacity:"0" });
     svg.appendChild(cross); svg.appendChild(halo);
-    var hit = el("rect", { x:m.l, y:m.t, width:iw, height:ih, fill:"transparent", style:"cursor:crosshair" });
+    var hit = el("rect", { "class":"c-hit", x:m.l, y:m.t, width:iw, height:ih, style:"cursor:crosshair" });
     svg.appendChild(hit);
 
     var tip = document.getElementById("tip1"), wrapEl = svg.closest(".chartwrap");
@@ -1161,7 +1185,6 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
           : '<div class="t-r"><span>Split</span><b>n/a</b></div>') +
         '<div class="t-src">' + r.src + '</div>';
       var wb = wrapEl.getBoundingClientRect();
-      // clamp inside the window — .win clips overflow
       var wantL = px / W * box.width + (box.left - wb.left);
       var half = tip.offsetWidth / 2 + 4;
       tip.style.left = Math.max(half, Math.min(wantL, wb.width - half)) + "px";
@@ -1184,35 +1207,32 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
     var X = function(v){ return m.l + (v - lo) / (hi - lo) * iw; };
     var rowH = ih / ISSUES.length, bh = Math.min(20, rowH * 0.56);
 
-    var C = { dis: cssv("--disapprove"), gr: cssv("--graphite"), rule: cssv("--rule-soft"),
-              ink3: cssv("--ink-3"), ink2: cssv("--ink-2"), ink: cssv("--ink"), card: cssv("--card") };
-
     for (var v = -30; v <= 0; v += 10){
-      svg.appendChild(el("line", { x1:X(v), x2:X(v), y1:m.t-6, y2:m.t+ih, stroke:C.rule, "stroke-width":1 }));
-      svg.appendChild(el("text", { x:X(v), y:m.t+ih+20, fill:C.ink3, "font-size":"11",
+      svg.appendChild(el("line", { "class":"c-grid", x1:X(v), x2:X(v), y1:m.t-6, y2:m.t+ih, "stroke-width":1 }));
+      svg.appendChild(el("text", { "class":"c-tick", x:X(v), y:m.t+ih+20, "font-size":"11",
         "text-anchor":"middle", "font-family":"var(--f-mono)" }, v === 0 ? "0" : "−" + Math.abs(v)));
     }
-    svg.appendChild(el("line", { x1:X(0), x2:X(0), y1:m.t-10, y2:m.t+ih+4, stroke:C.ink, "stroke-width":1.5 }));
-    svg.appendChild(el("text", { x:X(0)+7, y:m.t-14, fill:C.ink2, "font-size":"10.5",
+    svg.appendChild(el("line", { "class":"c-zero", x1:X(0), x2:X(0), y1:m.t-10, y2:m.t+ih+4, "stroke-width":1.5 }));
+    svg.appendChild(el("text", { "class":"c-zerotag", x:X(0)+7, y:m.t-14, "font-size":"10.5",
       "font-family":"var(--f-mono)", "letter-spacing":"0.08em" }, "BREAK-EVEN"));
 
     var tip = document.getElementById("tip2"), wrapEl = svg.closest(".chartwrap");
 
     ISSUES.forEach(function(r, i){
-      var cy = m.t + rowH * i + rowH / 2, xa = X(r.v), xb = X(0), colour = r.hot ? C.dis : C.gr, rad = 4;
+      var cy = m.t + rowH * i + rowH / 2, xa = X(r.v), xb = X(0), rad = 4, hot = r.hot ? " hot" : "";
       var d = "M" + xb + "," + (cy - bh/2) + "H" + (xa + rad) +
               "a" + rad + "," + rad + " 0 0 0 " + (-rad) + "," + rad +
               "V" + (cy + bh/2 - rad) +
               "a" + rad + "," + rad + " 0 0 0 " + rad + "," + rad + "H" + xb + "Z";
-      var bar = el("path", { d:d, fill:colour });
+      var bar = el("path", { "class":"c-bar" + hot, d:d });
       svg.appendChild(bar);
-      svg.appendChild(el("text", { x:m.l-14, y:cy+4.5, "text-anchor":"end", "font-size":"13.5",
-        fill: r.hot ? C.ink : C.ink2, "font-weight": r.hot ? "600" : "400" }, r.k));
-      svg.appendChild(el("text", { x:xa-9, y:cy+4.5, "text-anchor":"end", "font-size":"13",
-        fill:colour, "font-weight":"600", "font-family":"var(--f-mono)" }, "−" + Math.abs(r.v)));
+      svg.appendChild(el("text", { "class":"c-barlab" + hot, x:m.l-14, y:cy+4.5,
+        "text-anchor":"end", "font-size":"13.5" }, r.k));
+      svg.appendChild(el("text", { "class":"c-barval" + hot, x:xa-9, y:cy+4.5, "text-anchor":"end",
+        "font-size":"13", "font-weight":"600", "font-family":"var(--f-mono)" }, "−" + Math.abs(r.v)));
 
-      var hitR = el("rect", { x:m.l-194, y:cy-rowH/2, width:iw+194, height:rowH,
-        fill:"transparent", style:"cursor:pointer" });
+      var hitR = el("rect", { "class":"c-hit", x:m.l-194, y:cy-rowH/2, width:iw+194, height:rowH,
+        style:"cursor:pointer" });
       hitR.addEventListener("pointerenter", function(){
         bar.setAttribute("opacity","0.78");
         tip.innerHTML =
@@ -1485,7 +1505,9 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
         var label = wasOpen ? "Expand this panel" : "Collapse this panel";
         btn.title = label;
         var sr = btn.querySelector(".sr"); if (sr) sr.textContent = label;
-        if (wasOpen === false) drawAll();   // re-opened: charts need their box back
+        // Nothing to redraw: the SVGs are fixed-viewBox and scale with CSS.
+        // A tooltip left showing would reappear with the panel, though.
+        if (wasOpen) hideTips();
       });
     });
 
@@ -1524,26 +1546,20 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
     }
   }
 
-  // A redraw removes the hit rects that own the only pointerleave handlers,
-  // so any visible tooltip would be stranded with stale content.
-  function drawAll(){
+  function hideTips(){
     ["tip1","tip2"].forEach(function(id){
       var t = document.getElementById(id); if (t) t.style.opacity = "0";
     });
-    drawTracker(); drawIssues();
   }
+  function drawAll(){ hideTips(); drawTracker(); drawIssues(); }
   fill();
   initCalc();
   initConsole();
   drawAll();
 
-  if (window.matchMedia){
-    var mq = window.matchMedia("(prefers-color-scheme: dark)");
-    if (mq.addEventListener) mq.addEventListener("change", drawAll);
-  }
-  new MutationObserver(drawAll).observe(document.documentElement, { attributes:true, attributeFilter:["data-theme"] });
-  var rt;
-  window.addEventListener("resize", function(){ clearTimeout(rt); rt = setTimeout(drawAll, 160); });
+  // Drawn once. Colour comes from CSS tokens, so a change of appearance
+  // repaints the charts with no JS involved; geometry is in viewBox units,
+  // so a resize scales them with no JS either.
 })();
 </script>
 </body>
