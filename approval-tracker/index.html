@@ -4,6 +4,13 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Freight Desk Approval Tracker</title>
+<script>
+/* Stamp the saved appearance before the first paint. Without this the page
+   renders light and then flips, so anyone who chose NIGHT gets a white
+   flash on every load. */
+(function(){try{var t=localStorage.getItem("hmsc-appearance");
+if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap">
@@ -25,7 +32,6 @@
   --accent:#c0398f; --accent-soft:rgba(192,57,143,0.10);
   --approve:#2c6fd4; --disapprove:#d9541f;
   --gap-fill:rgba(217,84,31,0.12); --graphite:#93a3b4;
-  --tl-r:#ff5f57; --tl-y:#febc2e; --tl-g:#28c840;
   --win-shadow: 0 1px 1px rgba(16,28,42,0.10), 0 10px 24px -8px rgba(16,28,42,0.28),
                 0 34px 60px -30px rgba(16,28,42,0.42);
   --f-display:"Source Serif 4","New York",Georgia,serif;
@@ -181,9 +187,9 @@ body{
 /* GLITCH FIX: below 760px the meta is dropped and the title wraps left-aligned
    instead of being ellipsised into unreadability. */
 @media (max-width:760px){
-  /* keep three tracks so the DAY/NIGHT switch stays on the title-bar row;
-     the third collapses to zero once .wmeta is hidden */
-  .titlebar{ grid-template-columns:auto 1fr auto; gap:10px; }
+  /* .wmeta collapses its track to zero, so the DAY/NIGHT switch keeps its
+     place on the title-bar row without restating the base template */
+  .titlebar{ gap:10px; }
   .wmeta{ display:none; }
   .daynight{ width:92px; }
   .daynight span.plate{ width:46px; }
@@ -490,6 +496,7 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
   :root:not([data-theme="dark"]) .seg{
     background-image:linear-gradient(180deg,#ffffff 0%,#eef3f9 48%,#dde5ef 52%,#f4f7fb 100%);
     color:var(--ink-2); text-shadow:0 1px 0 rgba(255,255,255,0.75);
+    box-shadow:0 1px 2px rgba(16,28,42,0.14), inset 0 1px 0 rgba(255,255,255,0.9);
   }
 }
 .seg[aria-pressed="true"]{
@@ -560,9 +567,9 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
     <div class="instr"><button class="lever" type="button" data-shade aria-expanded="true" title="Collapse this panel"><span class="sr">Collapse this panel</span></button></div>
     <div class="wtitle">Freight Desk Approval Tracker</div>
     <button class="daynight" type="button" id="dayNight" role="switch" aria-checked="false"
-            title="Bridge lighting — day or night">
-      <span class="plate d">DAY</span><span class="plate n">NIGHT</span>
-      <span class="knob" id="dnKnob">DAY</span>
+            aria-label="Bridge lighting" title="Bridge lighting — day or night">
+      <span class="plate d" aria-hidden="true">DAY</span><span class="plate n" aria-hidden="true">NIGHT</span>
+      <span class="knob" id="dnKnob" aria-hidden="true">DAY</span>
     </button>
   </div>
   <div class="wbody">
@@ -602,16 +609,16 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
     <div class="hero-tiles">
       <div class="tile">
         <div class="lab"><span>Net approval &middot; latest poll</span><span class="prov">Published</span></div>
-        <div class="fig neg">&minus;29<small>points</small></div>
+        <div class="fig neg"><span id="heroNet">&minus;29</span><small>points</small></div>
         <div class="split">
-          <div><span class="sw" style="background:var(--approve)"></span>Approve<b>33%</b></div>
-          <div><span class="sw" style="background:var(--disapprove)"></span>Disapprove<b>62%</b></div>
+          <div><span class="sw" style="background:var(--approve)"></span>Approve<b id="heroApp">33%</b></div>
+          <div><span class="sw" style="background:var(--disapprove)"></span>Disapprove<b id="heroDis">62%</b></div>
         </div>
         <div class="range">
           <div class="track"><i style="left:calc(100% - 4px)"></i></div>
-          <div class="ends"><span>+11 at inauguration</span><span>&minus;29 now</span></div>
+          <div class="ends"><span id="heroFirst">+11 at inauguration</span><span id="heroLast">&minus;29 now</span></div>
         </div>
-        <div class="sub">Economist/YouGov, 7&ndash;10 August 2026 &mdash; the weakest reading of either term.</div>
+        <div class="sub"><span id="heroSrc">Economist/YouGov, 7&ndash;10 August 2026</span> &mdash; the weakest reading of either term.</div>
       </div>
       <div class="tile">
         <div class="lab"><span>To the midterms</span></div>
@@ -654,10 +661,10 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
     </div>
     <div class="evkey" id="evkey"></div>
     <div class="tv">
-      <button class="gel" data-toggle="tbl1" aria-expanded="false" aria-controls="tbl1">Show the seven readings</button>
+      <button class="gel" data-toggle="tbl1" aria-expanded="false" aria-controls="tbl1">Show all readings</button>
       <div class="tbl-scroll" id="tbl1" hidden></div>
     </div>
-    <p class="footnote">Seven published readings, plotted where they fall. The line joins them so the trend is
+    <p class="footnote"><span id="readCount">7</span> published readings, plotted where they fall. The line joins them so the trend is
     readable; it is <em>not</em> a continuous poll average, and where more than a hundred days separate two readings
     it is drawn dashed to say so.</p>
   </div>
@@ -752,7 +759,7 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
         <div class="segs" id="segs"></div>
         <div class="flab mt">2 &middot; Net tonnage</div>
         <div class="ntrow">
-          <input type="number" id="ntInput" min="1" max="400000" step="100" value="105000"
+          <input type="number" id="ntInput" min="0" max="400000" step="any" value="105000"
                  aria-label="Net tonnage" inputmode="numeric">
           <div class="hint" id="ntHint">Indicative for the segment. Overwrite with the figure from the
           vessel&rsquo;s tonnage certificate &mdash; the fee is assessed on net tonnage, not deadweight.</div>
@@ -765,7 +772,7 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
         <p class="calcnote" id="annexNote"></p>
       </div>
       <div class="panel feeout">
-        <div class="flab">Fee per US voyage</div>
+        <div class="flab" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span>Fee per US voyage</span><span class="prov is-calc">Our calculation</span></div>
         <div class="headline zero" id="feeNow">$0</div>
         <div class="headsub" id="feeNowSub">Suspended until 9 November 2026.</div>
         <div class="flab mt">If the schedule resumes</div>
@@ -776,7 +783,10 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
         <p class="calcnote" id="boxNote"></p>
       </div>
     </div>
-    <p class="footnote">Rates are the published USTR Section&nbsp;301 schedule, currently suspended. Segment net
+    <p class="footnote">Rates are the published USTR Section&nbsp;301 schedule, currently suspended. The steps
+    below are the published <em>calendar</em>; because nothing has been collected since 10&nbsp;November 2025,
+    whether the schedule resumes at the step its date implies or re-bases from where it stopped is not settled.
+    Treat the figures as the upper bound. Segment net
     tonnages are indicative rules of thumb for a typical modern ship &mdash; only the VLCC figure is anchored to a
     published example (a 300,000&nbsp;dwt tanker at 157,814&nbsp;GT / 108,701&nbsp;NT). Korean, Japanese and
     European-built tonnage under a non-Chinese operator falls outside both annexes and pays nothing.</p>
@@ -808,15 +818,9 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
         resumes against US-built, US-owned and US-operated ships.</p>
         <table class="feebox">
           <thead><tr><th>Per net ton, per US voyage</th><th>Apr 2026</th><th>Apr 2027</th><th>Apr 2028</th></tr></thead>
-          <tbody>
-            <tr><td>Chinese-<strong>built</strong>, non-Chinese operator <span class="mut">(Annex II)</span></td>
-                <td class="num">$23</td><td class="num">$28</td><td class="num">$33</td></tr>
-            <tr><td>Chinese-<strong>owned or operated</strong> <span class="mut">(Annex I)</span></td>
-                <td class="num">$80</td><td class="num">$110</td><td class="num">$140</td></tr>
-            <tr><td>Box ships, alternative basis <span class="mut">(per container discharged)</span></td>
-                <td class="num">$153</td><td class="num">$195</td><td class="num">$250</td></tr>
-          </tbody>
+          <tbody id="feeSched"></tbody>
         </table>
+        <p class="calcnote" id="boxAlt"></p>
       </div>
     </div>
     <p style="margin-top:20px"><strong>Desk implication.</strong> Any period charter or S&amp;P negotiation on
@@ -913,8 +917,8 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
   // kind: "poll" = a single Economist/YouGov poll (approve/disapprove known)
   //       "agg"  = an Economist poll-of-polls reading (net only)
   var NET = [
-    { d:"2025-01-27", v: 11, a:50, p:39, kind:"agg",
-      src:"Poll averages at inauguration" },
+    { d:"2025-01-27", v: 11, a:null, p:null, kind:"agg",
+      src:"Poll averages at inauguration — net only" },
     { d:"2025-10-27", v:-19, a:39, p:58, kind:"poll",
       src:"Economist/YouGov, 24–27 Oct 2025" },
     { d:"2026-03-02", v:-21, a:null, p:null, kind:"agg",
@@ -997,7 +1001,7 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
     var p = s.split("-");
     return +p[2] + " " + M[+p[1]-1] + " " + p[0];
   }
-  function sgn(v){ return (v > 0 ? "+" : "−") + Math.abs(v); }
+  function sgn(v){ return (v >= 0 ? "+" : "−") + Math.abs(v); }
   function el(tag, attrs, text){
     var n = document.createElementNS("http://www.w3.org/2000/svg", tag);
     for (var k in attrs){ if (attrs[k] !== null && attrs[k] !== undefined) n.setAttribute(k, attrs[k]); }
@@ -1012,10 +1016,15 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
   var toFee = Math.max(0, Math.ceil((dt("2026-11-09") - now) / MS));
   ["c1","c3"].forEach(function(id){ var e = document.getElementById(id); if (e) e.textContent = toMid; });
   ["c2","c4"].forEach(function(id){ var e = document.getElementById(id); if (e) e.textContent = toFee; });
-  var span = dt("2026-11-09") - dt("2025-11-10");
-  var elapsed = Math.min(1, Math.max(0, (now - dt("2025-11-10")) / span));
-  ["b1","b2"].forEach(function(id){
-    var e = document.getElementById(id); if (e) e.style.width = (elapsed*100).toFixed(1) + "%";
+  // Each bar runs its own window: the midterms tile counts to 3 November,
+  // the port-fee tile to 9 November. One shared span made both bars claim
+  // the same progress while the counters above them read different days.
+  var RUN_FROM = dt("2025-11-10");                 // the truce, our common start line
+  [["b1","2026-11-03"], ["b2","2026-11-09"]].forEach(function(pair){
+    var e = document.getElementById(pair[0]); if (!e) return;
+    var span = dt(pair[1]) - RUN_FROM;
+    var frac = Math.min(1, Math.max(0, (now - RUN_FROM) / span));
+    e.style.width = (frac*100).toFixed(1) + "%";
   });
   var td = document.getElementById("today");
   if (td) td.textContent = new Date().toLocaleDateString("en-GB", { day:"numeric", month:"long", year:"numeric" });
@@ -1269,6 +1278,37 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
                (r.hot ? "Directly" : "Indirectly") + ' — ' + r.ch + '</td></tr>';
       }).join("") + '</tbody></table>';
 
+    // Plate 6's schedule table and the hero figures are rendered from FEE and
+    // NET rather than restated as literals — the Section 301 correction had to
+    // be made in three places precisely because they were duplicated.
+    var sched = document.getElementById("feeSched");
+    if (sched){
+      sched.innerHTML = [
+        { d:'Chinese-<strong>built</strong>, non-Chinese operator <span class="mut">(Annex II)</span>', k:"II" },
+        { d:'Chinese-<strong>owned or operated</strong> <span class="mut">(Annex I)</span>',            k:"I"  }
+      ].map(function(row){
+        return "<tr><td>" + row.d + "</td>" +
+          FEE[row.k].tiers.slice(1).map(function(t){
+            return '<td class="num">$' + t.rate + "</td>"; }).join("") + "</tr>";
+      }).join("");
+    }
+    var boxAlt = document.getElementById("boxAlt");
+    if (boxAlt){
+      boxAlt.innerHTML = "Box ships may instead be assessed <b>per container discharged</b> — $" +
+        FEE.II.box.slice(1).join(" / $") + " across the same three steps. That is a different basis " +
+        "from the net-tonnage rates above, not another row of them.";
+    }
+
+    var first = NET[0], last = NET[NET.length - 1];
+    function setTxt(id, v){ var e = document.getElementById(id); if (e) e.textContent = v; }
+    setTxt("heroNet", sgn(last.v));
+    setTxt("heroApp", last.a !== null ? last.a + "%" : "—");
+    setTxt("heroDis", last.p !== null ? last.p + "%" : "—");
+    setTxt("heroFirst", sgn(first.v) + " at inauguration");
+    setTxt("heroLast", sgn(last.v) + " now");
+    setTxt("heroSrc", last.src);
+    setTxt("readCount", String(NET.length));
+
     Array.prototype.forEach.call(document.querySelectorAll("[data-toggle]"), function(btn){
       var label = btn.textContent;
       btn.addEventListener("click", function(){
@@ -1329,13 +1369,16 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
   var calcState = { seg:0, nt:105000, annex:"II" };
 
   function money(n){
-    if (n >= 1e6) return "$" + (n/1e6).toFixed(n >= 1e7 ? 1 : 2) + "m";
-    if (n >= 1e3) return "$" + Math.round(n/1e3) + "k";
+    if (!isFinite(n) || n < 0) return "—";
+    if (n >= 9.995e5) return "$" + (n/1e6).toFixed(n >= 1e7 ? 1 : 2) + "m";   // cross before rounding
+    if (n >= 1e4)     return "$" + Math.round(n/1e3) + "k";
+    if (n >= 1e3)     return "$" + (n/1e3).toFixed(1) + "k";
     return "$" + Math.round(n);
   }
 
   function renderCalc(){
     var f = FEE[calcState.annex], nt = calcState.nt, seg = SEGMENTS[calcState.seg];
+    var known = (typeof nt === "number" && isFinite(nt) && nt > 0);
 
     // which tier is in force today
     var idx = 0;
@@ -1346,18 +1389,23 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
     if (suspended){
       nowEl.textContent = "$0";
       nowEl.className = "headline zero";
-      subEl.textContent = "Suspended until 9 November 2026 — " + toFee + " days away.";
+      subEl.innerHTML = "Suspended until 9 November 2026 — " + toFee + " days away. Nothing has been " +
+        "collected since 10 November 2025, so the April 2026 step below never took effect.";
+    } else if (!known){
+      nowEl.textContent = "—";
+      nowEl.className = "headline";
+      subEl.textContent = "Enter the vessel's net tonnage.";
     } else {
       nowEl.textContent = money(nt * f.tiers[idx].rate);
       nowEl.className = "headline";
-      subEl.textContent = "In force at $" + f.tiers[idx].rate + "/NT since " + f.tiers[idx].d + ".";
+      subEl.textContent = "At the $" + f.tiers[idx].rate + "/NT step dated " + f.tiers[idx].d + ".";
     }
 
     document.getElementById("feeRows").innerHTML = f.tiers.map(function(t, i){
-      var live = !suspended && i === idx;
+      var live = !suspended && known && i === idx;
       return '<tr class="' + (live ? "now" : "") + '"><td class="num">' + t.d + '</td>' +
              '<td class="num">$' + t.rate + '/NT</td>' +
-             '<td class="num big">' + money(nt * t.rate) + '</td></tr>';
+             '<td class="num big">' + (known ? money(nt * t.rate) : "—") + '</td></tr>';
     }).join("");
 
     document.getElementById("annexNote").textContent = f.annex + " — " + f.note;
@@ -1413,9 +1461,13 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
       renderCalc();
     });
 
+    // A blank or nonsense field is "we don't know yet", never "$0" — on a page
+    // whose whole point is that the fee is zero today, a spurious zero schedule
+    // is the most dangerous wrong answer available.
     input.addEventListener("input", function(){
       var v = parseFloat(input.value);
-      calcState.nt = (isFinite(v) && v > 0) ? v : 0;
+      calcState.nt = (isFinite(v) && v > 0) ? v : null;
+      input.setAttribute("aria-invalid", String(calcState.nt === null));
       renderCalc();
     });
 
@@ -1472,7 +1524,14 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
     }
   }
 
-  function drawAll(){ drawTracker(); drawIssues(); }
+  // A redraw removes the hit rects that own the only pointerleave handlers,
+  // so any visible tooltip would be stranded with stale content.
+  function drawAll(){
+    ["tip1","tip2"].forEach(function(id){
+      var t = document.getElementById(id); if (t) t.style.opacity = "0";
+    });
+    drawTracker(); drawIssues();
+  }
   fill();
   initCalc();
   initConsole();
