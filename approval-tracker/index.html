@@ -301,6 +301,12 @@ h1 em{ font-style:italic; color:var(--aqua); }
 .tile .fig small{ font-family:var(--f-sans); font-size:13.5px; font-weight:600; letter-spacing:0; color:var(--ink-3); }
 .tile .fig.neg{ color:var(--disapprove); }
 .tile .sub{ font-size:12.5px; color:var(--ink-2); margin-top:11px; }
+.age{ color:var(--ink-3); }
+.stale{
+  display:inline-block; margin-top:8px; font-size:11px; font-weight:700; letter-spacing:.04em;
+  padding:3px 9px; border-radius:999px; color:#5a3d00; background:#f6d27a;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 0 0 1px rgba(90,61,0,0.25);
+}
 .tile .split{ display:flex; gap:20px; margin-top:13px; }
 .tile .split div{ font-size:12px; color:var(--ink-3); }
 .tile .split b{ display:block; font-family:var(--f-mono); font-size:19px; font-weight:600;
@@ -644,7 +650,7 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
 
     <div class="hero-tiles">
       <div class="tile">
-        <div class="lab"><span>Net approval &middot; latest poll</span><span class="prov">Published</span></div>
+        <div class="lab"><span id="heroLab">Net approval &middot; latest poll</span><span class="prov">Published</span></div>
         <div class="fig neg"><span id="heroNet">&minus;29</span><small>points</small></div>
         <div class="split">
           <div><span class="sw" style="background:var(--approve)"></span>Approve<b id="heroApp">33%</b></div>
@@ -654,7 +660,7 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
           <div class="track"><i style="left:calc(100% - 4px)"></i></div>
           <div class="ends"><span id="heroFirst">+11 at inauguration</span><span id="heroLast">&minus;29 now</span></div>
         </div>
-        <div class="sub"><span id="heroSrc">Economist/YouGov, 7&ndash;10 August 2026</span> &mdash; the weakest reading of either term.</div>
+        <div class="sub" id="heroSub"></div>
       </div>
       <div class="tile">
         <div class="lab"><span>To the midterms</span></div>
@@ -949,9 +955,22 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
      says otherwise. Nothing here is interpolated.
      ============================================================== */
 
-  // Net approval — published readings only.
-  // kind: "poll" = a single Economist/YouGov poll (approve/disapprove known)
-  //       "agg"  = an Economist poll-of-polls reading (net only)
+  /* Net approval — published readings only. THIS SERIES IS MAINTAINED BY HAND.
+   *
+   * To add a reading, append one entry in date order and nothing else; the
+   * hero figures, the chart, the table and the reading count all derive from
+   * this array.
+   *
+   *   d    ISO date the reading was published
+   *   v    net approval (negative is underwater)
+   *   a,p  approve / disapprove. A single poll has both. A poll-of-polls has
+   *        neither — use null; do NOT infer a split from the net.
+   *   kind "poll" = one Economist/YouGov poll · "agg" = an Economist poll-of-polls
+   *   src  the citation shown in the tooltip and the table
+   *
+   * checkNET() below enforces this on load and complains in the console if an
+   * entry breaks it — including v !== a - p, which catches a mistyped figure.
+   */
   var NET = [
     { d:"2025-01-27", v: 11, a:null, p:null, kind:"agg",
       src:"Poll averages at inauguration — net only" },
@@ -1326,8 +1345,25 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
     setTxt("heroDis", last.p !== null ? last.p + "%" : "—");
     setTxt("heroFirst", sgn(first.v) + " at inauguration");
     setTxt("heroLast", sgn(last.v) + " now");
-    setTxt("heroSrc", last.src);
     setTxt("readCount", String(NET.length));
+    setTxt("heroLab", "Net approval · latest " + (last.kind === "poll" ? "poll" : "reading"));
+
+    // Hero caption: source, how old the reading is, and whether it is still
+    // the low — all derived, so adding a reading cannot leave a stale claim.
+    var ageDays = Math.max(0, Math.round((now - dt(last.d)) / MS));
+    var isLow = NET.every(function(r){ return r.v >= last.v; });
+    var sub = document.getElementById("heroSub");
+    if (sub){
+      sub.innerHTML = last.src +
+        '<span class="age"> · ' + (ageDays === 0 ? "published today"
+                                 : ageDays === 1 ? "1 day ago"
+                                 : ageDays + " days ago") + '</span>' +
+        (isLow ? " &mdash; the weakest reading of either term." : ".") +
+        (ageDays > STALE_AFTER_DAYS
+          ? '<br><span class="stale">No reading in ' + ageDays + ' days — check for a newer poll</span>'
+          : "");
+    }
+    checkNET();
 
     Array.prototype.forEach.call(document.querySelectorAll("[data-toggle]"), function(btn){
       var label = btn.textContent;
@@ -1384,6 +1420,30 @@ td.num{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-spac
     { k:"LNG carrier",     sz:"174,000 cbm", nt:36000 },
     { k:"PCTC",            sz:"6,500 CEU",   nt:22000 }
   ];
+
+  /* A hand-maintained series fails in two ways: an entry gets typed wrong, and
+     the whole thing quietly goes stale. Guard both. */
+  var STALE_AFTER_DAYS = 45;
+
+  function checkNET(){
+    var problems = [];
+    NET.forEach(function(r, i){
+      var at = "NET[" + i + "] " + r.d;
+      if (!r.src) problems.push(at + ": no src");
+      if (r.kind === "agg" && (r.a !== null || r.p !== null))
+        problems.push(at + ": a poll-of-polls carries no approve/disapprove split — set a and p to null");
+      if (r.kind === "poll" && (r.a === null || r.p === null))
+        problems.push(at + ": a single poll should carry both approve and disapprove");
+      if (r.a !== null && r.p !== null && r.v !== r.a - r.p)
+        problems.push(at + ": net is " + r.v + " but " + r.a + " − " + r.p + " = " + (r.a - r.p));
+      if (i > 0 && dt(r.d) <= dt(NET[i-1].d))
+        problems.push(at + ": out of order — readings must ascend by date");
+    });
+    if (problems.length && window.console && console.warn){
+      console.warn("Approval series needs attention:\n  " + problems.join("\n  "));
+    }
+    return problems;
+  }
 
   var SUSPEND_END = dt("2026-11-09");
   var calcState = { seg:0, nt:105000, annex:"II" };
