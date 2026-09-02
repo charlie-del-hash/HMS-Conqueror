@@ -20,17 +20,39 @@ attribution, then adds the maritime layer:
   from the background political weather.
 - **Plate 03** — a transmission board mapping each poll number to the freight channel it travels
   down, the segments exposed, and what the desk would actually do about it.
-- **Plate 04** — the Section 301 vessel fee: zero today, $80/NT if it reverts, ≈$12.5m per VLCC US
-  call. Market context marks sit below it, visually subordinated.
-- **Plate 05** — the November window: the midterms on 3 November 2026 and the expiry of the
+- **Plate 04** — the Section 301 vessel fee: zero today, $23/NT (Annex II) or $80/NT (Annex I) if
+  it reverts. Market context marks sit below it, visually subordinated.
+- **Plate 05** — a **fee calculator**. Pick a segment or type the net tonnage off the tonnage
+  certificate, choose which annex applies, and read the fee per US voyage at every step of the
+  published schedule.
+- **Plate 06** — the November window: the midterms on 3 November 2026 and the expiry of the
   Section 301 vessel-fee truce on 9 November 2026, six days apart.
+
+### The Section 301 schedule
+
+Fees are assessed **per US voyage on net tonnage** — not deadweight, not per port call. Two
+separate schedules apply, and conflating them is the easy mistake:
+
+| Per net ton | Oct 2025 | Apr 2026 | Apr 2027 | Apr 2028 |
+|---|---|---|---|---|
+| **Annex II** — Chinese-*built*, non-Chinese operator | $18 | $23 | $28 | $33 |
+| **Annex I** — Chinese-*owned or operated* | $50 | $80 | $110 | $140 |
+| Box ships, alternative basis (per container discharged) | $120 | $153 | $195 | $250 |
+
+Korean, Japanese and European-built tonnage under a non-Chinese operator falls outside both
+annexes and pays nothing. Everything is suspended until 9 November 2026.
 
 ### Visual design
 
 Aqua (Mac OS X, 2001–2007) read through modern Apple HIG. The page is a stack of windows on a
-pinstriped desktop: brushed-metal title bars with traffic lights, sunken bezels around the charts,
-lickable gel controls, and candy-stripe progress bars on the countdowns. Dark mode is Aqua's own
-**Graphite** appearance rather than an inversion of the light theme.
+pinstriped desktop: brushed-metal title bars, sunken bezels around the charts, lickable gel
+controls, and candy-stripe progress bars on the countdowns. Dark mode is Aqua's own **Graphite**
+appearance rather than an inversion of the light theme.
+
+**Every control does something.** A ship's console has no decorative lamps, so the window title
+bars carry brass instruments rather than imitation traffic lights: a knurled **shade lever** that
+collapses its panel, and — in the masthead — a **DAY / NIGHT switch**, the bridge-lighting control,
+wired to the page's appearance and remembered per browser.
 
 Type is Source Serif 4 (standing in for Apple's New York) and Source Sans 3 (for Lucida Grande /
 Myriad); data figures use the native Apple mono stack, so on a Mac they render in SF Mono or Menlo.
