@@ -71,6 +71,33 @@ Every figure on the page carries one of three tags, and the key is repeated in t
 | **Desk-entered** | Typed in by hand from secondary reporting. Verify before quoting; replace with a live feed. |
 | **Our calculation** | Derived by us from published inputs, with the arithmetic shown. |
 
+### Updating the approval series
+
+The series is **maintained by hand** — seven readings across nineteen months, so a feed would
+cost more than it saves. To add one, append a single entry to `NET` in `approval-tracker/index.html`,
+in date order, and change nothing else: the hero figures, the chart, the readings table, the
+reading count and the "weakest reading" claim all derive from that array.
+
+```js
+{ d:"2026-09-14", v:-27, a:35, p:62, kind:"poll",
+  src:"Economist/YouGov, 11–14 Sep 2026" },
+```
+
+| Field | |
+|---|---|
+| `d` | ISO date the reading was published |
+| `v` | net approval (negative is underwater) |
+| `a`, `p` | approve / disapprove. A single poll has both; **a poll-of-polls has neither — use `null`.** Never infer a split from the net. |
+| `kind` | `"poll"` for one Economist/YouGov poll, `"agg"` for an Economist poll-of-polls |
+| `src` | the citation shown in the tooltip and the table |
+
+`checkNET()` runs on load and warns in the browser console if an entry breaks those rules —
+including when `v !== a - p`, which catches a mistyped figure. Open the console after editing.
+
+The page also shows the age of the latest reading, and displays a **"check for a newer poll"**
+flag once it passes 45 days, so a series nobody has touched cannot quietly present itself as
+current.
+
 **Plate 01 plots only published readings** — seven of them, at the dates they were published.
 Nothing is interpolated: where more than a hundred days separate two readings the connector is
 drawn dashed, because there is no data in between. (An earlier draft drew a smooth monthly line
