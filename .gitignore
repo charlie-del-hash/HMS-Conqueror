@@ -2,7 +2,6 @@
 # they are never served, and nothing links to them. Put them in an issue or
 # a gist if they are worth keeping.
 screenshots/
-*.png
 
 # Editor and OS noise
 .DS_Store
